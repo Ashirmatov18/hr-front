@@ -1,4 +1,4 @@
-/* HR Ecosystem Mini App — clean, minimal, Telegram-friendly — Build 2024.02 */
+/* HR Ecosystem Mini App — refreshed design */
 :root {
   --hr-bg: #f0fdfa;
   --hr-card-bg: #ffffff;
@@ -7,11 +7,11 @@
   --hr-accent: #14b8a6;
   --hr-text: #134e4a;
   --hr-text-secondary: #64748b;
-  --hr-border: #ccfbf1;
-  --hr-radius: 14px;
-  --hr-radius-sm: 10px;
-  --hr-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
-  --hr-shadow-hover: 0 4px 14px rgba(13, 148, 136, 0.12);
+  --hr-border: #99f6e4;
+  --hr-radius: 16px;
+  --hr-radius-sm: 12px;
+  --hr-shadow: 0 4px 20px rgba(13, 148, 136, 0.06);
+  --hr-shadow-hover: 0 8px 28px rgba(13, 148, 136, 0.1);
   --hr-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -80,6 +80,16 @@ body {
   line-height: 1.5;
 }
 
+.profile-hint {
+  font-size: 13px;
+  color: var(--hr-primary);
+  margin: 0 0 12px 0;
+  padding: 10px 12px;
+  background: rgba(13, 148, 136, 0.08);
+  border-radius: 8px;
+  line-height: 1.45;
+}
+
 /* Screen layout */
 .screen {
   max-width: 420px;
@@ -123,9 +133,9 @@ body {
 
 /* Home */
 .home .welcome-card {
-  background: linear-gradient(145deg, #ccfbf1 0%, var(--hr-card-bg) 50%, #f0fdfa 100%);
+  background: linear-gradient(160deg, #ccfbf1 0%, #f0fdfa 45%, var(--hr-card-bg) 100%);
   border-radius: var(--hr-radius);
-  padding: 24px;
+  padding: 28px 24px;
   margin-bottom: 28px;
   box-shadow: var(--hr-shadow);
   border: 1px solid var(--hr-border);
@@ -134,29 +144,30 @@ body {
 }
 
 .home .welcome-card .greeting {
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--hr-primary);
-  margin: 0 0 6px 0;
+  margin: 0 0 8px 0;
   font-weight: 600;
 }
 
 .home .welcome-card .user-name {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  margin: 0 0 10px 0;
+  margin: 0 0 12px 0;
   color: var(--hr-text);
+  letter-spacing: -0.02em;
 }
 
 .home .role-badge {
   display: inline-block;
-  padding: 5px 12px;
-  border-radius: 20px;
+  padding: 6px 14px;
+  border-radius: 24px;
   font-size: 12px;
   font-weight: 600;
   text-transform: capitalize;
-  background: rgba(13, 148, 136, 0.15);
+  background: rgba(13, 148, 136, 0.12);
   color: var(--hr-primary);
 }
 
@@ -198,7 +209,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding: 20px 22px;
   background: var(--hr-card-bg);
   border: 1px solid var(--hr-border);
   border-radius: var(--hr-radius);
@@ -284,13 +295,14 @@ body {
 .profile-card {
   background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
-  padding: 20px;
-  margin-bottom: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
   box-shadow: var(--hr-shadow);
+  border: 1px solid var(--hr-border);
 }
 
 .profile-card .field {
-  padding: 12px 0;
+  padding: 14px 0;
   border-bottom: 1px solid var(--hr-border);
 }
 
@@ -299,16 +311,18 @@ body {
 }
 
 .profile-card .field-label {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--hr-text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
 .profile-card .field-value {
-  font-size: 15px;
+  font-size: 16px;
   color: var(--hr-text);
+  font-weight: 500;
 }
 
 .btn-back {
@@ -619,9 +633,14 @@ body {
 
 .empty-state {
   text-align: center;
-  padding: 40px 20px;
+  padding: 48px 24px;
   color: var(--hr-text-secondary);
   font-size: 15px;
+  line-height: 1.5;
+  background: var(--hr-card-bg);
+  border-radius: var(--hr-radius);
+  border: 1px dashed var(--hr-border);
+  margin-bottom: 16px;
 }
 
 /* Resume / content screen */

@@ -97,13 +97,16 @@
 
   function renderProfile() {
     var p = profile || {};
-    var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || p.display_name || '—';
+    var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || (p.display_name || '').trim() || p.user_login || '—';
+    var nameEmpty = !name || name === '—';
+    if (nameEmpty) name = 'Имя не указано';
     var mode = getAppMode();
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (p.role === 'candidate' ? 'Candidate' : (p.role || '—'))));
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
+    if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
     html += '<div class="field"><div class="field-label">Current mode</div><div class="field-value">' + escapeHtml(mode === 'employer' ? 'Posting vacancies' : 'Looking for job') + '</div></div>';
     html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
@@ -122,6 +125,11 @@
     if (val && typeof val === 'object' && Array.isArray(val.items)) return val.items;
     if (val && typeof val === 'object' && Array.isArray(val.data)) return val.data;
     if (val && typeof val === 'object' && Array.isArray(val.list)) return val.list;
+    if (val && typeof val === 'object' && Array.isArray(val.vacancies)) return val.vacancies;
+    if (val && typeof val === 'object') {
+      var k = Object.keys(val)[0];
+      if (k && Array.isArray(val[k])) return val[k];
+    }
     return [];
   }
 
@@ -739,8 +747,8 @@
     }
     if (screen === 'vacancies') {
       Promise.all([ window.HR_API.get('/vacancies'), window.HR_API.get('/applications/me') ]).then(function (arr) {
-        var list = ensureArray(arr[0]);
-        var applications = ensureArray(arr[1] || []);
+        var list = ensureArray(arr && arr[0] !== undefined ? arr[0] : []);
+        var applications = ensureArray(arr && arr[1] !== undefined ? arr[1] : []);
         var appliedIds = {};
         applications.forEach(function (a) { appliedIds[a.vacancy_id] = true; });
         lastVacanciesList = list;

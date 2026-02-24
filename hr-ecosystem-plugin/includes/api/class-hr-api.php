@@ -381,7 +381,7 @@ class HR_Ecosystem_API {
 		}
 		wp_reset_postdata();
 
-		return $vacancies;
+		return rest_ensure_response( $vacancies );
 	}
 
 	/**
@@ -762,14 +762,16 @@ class HR_Ecosystem_API {
 	}
 
 	/**
-	 * Найти резюме по автору (одно на пользователя)
+	 * Найти резюме по автору (одно на пользователя). Ищем любой статус, чтобы не терять черновики.
 	 */
 	private function get_resume_by_author( $user_id ) {
 		$posts = get_posts( array(
 			'post_type'      => 'hr_resume',
-			'post_status'    => 'publish',
+			'post_status'    => 'any',
 			'author'         => $user_id,
 			'posts_per_page' => 1,
+			'orderby'        => 'modified',
+			'order'          => 'DESC',
 		) );
 		return isset( $posts[0] ) ? $posts[0] : null;
 	}
