@@ -69,12 +69,12 @@ So the candidate: **browses vacancies → clicks Respond → sees applications a
 
 | Screen | Action |
 |--------|--------|
-| **My vacancies** | List of vacancies they own. Each has **View** (full description) and **Delete** (with confirmation). |
-| **Opened resumes** | Resumes of candidates that have a **confirmed match** with one of their vacancies. Only these resumes are visible to the employer. |
-| **Vacancies** | Same as for candidate: browse vacancies (e.g. for reference). |
-| **Profile** | View their profile. |
+| **My vacancies** | List of vacancies they own (company name + job title). Each has **View** and **Delete**. |
+| **Pending my approval** | Matches that admin has approved (status "Pending employer"). Employer can **Approve** or **Reject**. After approval, the candidate sees the match in My matches. |
+| **Opened resumes** | Resumes of candidates after the employer has **approved** the match (status = confirmed). Shows company and job title. |
+| **Profile** | View profile and **Switch mode** (job seeker / posting vacancy). |
 
-So the employer: **sees their vacancies and, for confirmed matches, the candidates’ resumes.** Creating vacancies can be added later in the Mini App or done in WordPress admin.
+So the employer: **sees their vacancies and, for confirmed matches, the candidates' resumes.** Creating vacancies can be added later in the Mini App or done in WordPress admin.
 
 ---
 
@@ -88,4 +88,6 @@ If an admin opens the app from Telegram (or you log in with a dev token for an a
 
 - **Design:** Updated to cards, clear hierarchy, back button, Telegram theme support.
 - **Dev login:** You see admin because the dev token is for the admin user; in production users see their own role.
-- **In Telegram:** One app for everyone; the **role** (candidate / employer / admin) decides which menu items and data they see. Candidate: create/edit resume (with CV file), view vacancies and respond, view applications and matches and set reaction. Employer: create vacancy, my vacancies, opened resumes, profile. Admin: all of the above; match management stays in WordPress web admin.
+- **In Telegram:** One app for everyone; the **role** (candidate / employer / admin) decides which menu items and data they see. Candidate: create/edit resume (with CV file), view vacancies and respond, view applications and matches and set reaction. Employer: create vacancy, my vacancies, pending approval, opened resumes, profile. Admin: all of the above; match management stays in WordPress web admin.
+
+**Deploy and connect to Telegram:** Backend (WordPress) must be reachable over HTTPS. In BotFather set the Mini App URL to your frontend (e.g. Vercel). In frontend config set `API_BASE_URL` to your WordPress URL; leave `DEV_TOKEN` empty. Users open the bot and tap the Mini App; they are logged in automatically.

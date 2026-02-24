@@ -4,7 +4,7 @@
 (function () {
   window.HR_CONFIG = {
     // Base URL of your WordPress site — only the site root, e.g. http://hr-ecosystem.local (no /wp-admin/...)
-    API_BASE_URL: 'http://hr-ecosystem.local',
+    API_BASE_URL: 'https://diarch-validatory-maira.ngrok-free.dev',
     // Optional: paste dev token here for local testing (get it from WP admin console). Leave empty to use the form.
     DEV_TOKEN: '',
   };
