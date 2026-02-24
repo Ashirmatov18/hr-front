@@ -183,6 +183,19 @@ class HR_Ecosystem_API {
 			'permission_callback' => '__return_true',
 			'args'                => array( 'id' => array( 'required' => true, 'type' => 'integer', 'minimum' => 1 ) ),
 		) );
+
+		// AI: parse raw vacancy text (title, content, skills, tags)
+		register_rest_route( $namespace, '/ai/parse-vacancy', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'ai_parse_vacancy' ),
+			'permission_callback' => array( $this, 'ensure_ai_user' ),
+		) );
+		// AI: generate resume title + content from prompt
+		register_rest_route( $namespace, '/ai/generate-resume', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'ai_generate_resume' ),
+			'permission_callback' => array( $this, 'ensure_ai_user' ),
+		) );
 	}
 
 	private function ensure_current_user() {
@@ -290,6 +303,7 @@ class HR_Ecosystem_API {
 			'id'           => $user_id,
 			'first_name'   => $user->first_name ?: '',
 			'last_name'    => $user->last_name  ?: '',
+			'display_name' => $user->display_name ?: '',
 			'role'         => $hr_role,
 			'hr_status'    => get_user_meta( $user_id, 'hr_status',    true ) ?: 'passive',
 			'linkedin_url' => get_user_meta( $user_id, 'linkedin_url', true ) ?: '',
@@ -685,8 +699,7 @@ class HR_Ecosystem_API {
 		if ( ! $resume ) {
 			return rest_ensure_response( array( 'resume' => null ) );
 		}
-
-		return rest_ensure_response( $this->format_resume( $resume ) );
+		return rest_ensure_response( array( 'resume' => $this->format_resume( $resume ) ) );
 	}
 
 	/**
@@ -735,7 +748,7 @@ class HR_Ecosystem_API {
 		}
 
 		$resume = get_post( $post_id );
-		return rest_ensure_response( $this->format_resume( $resume ) );
+		return rest_ensure_response( array( 'resume' => $this->format_resume( $resume ) ) );
 	}
 
 	/**
@@ -1155,5 +1168,63 @@ class HR_Ecosystem_API {
 		update_post_meta( $match_id, 'hr_candidate_reaction', $reaction );
 		$match = get_post( $match_id );
 		return rest_ensure_response( $this->format_match( $match ) );
+	}
+
+	/**
+	 * Permission callback for AI routes: user must be logged in.
+	 */
+	public function ensure_ai_user( $request ) {
+		$user_id = $this->ensure_current_user();
+		if ( $user_id === 0 ) {
+			return new WP_Error( 'rest_not_logged_in', 'User is not logged in.', array( 'status' => 401 ) );
+		}
+		return true;
+	}
+
+	/**
+	 * POST /ai/parse-vacancy — body: raw_text. Returns title, content, skills_required, tags.
+	 */
+	public function ai_parse_vacancy( $request ) {
+		$params = $request->get_json_params();
+		$raw_text = isset( $params['raw_text'] ) ? sanitize_textarea_field( $params['raw_text'] ) : '';
+		if ( empty( trim( $raw_text ) ) ) {
+			return new WP_Error( 'missing_raw_text', 'raw_text is required.', array( 'status' => 400 ) );
+		}
+		$ai = new HR_Ecosystem_OpenAI();
+		$result = $ai->parse_vacancy( $raw_text );
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'ai_error', $result->get_error_message(), array( 'status' => 502 ) );
+		}
+		if ( ! is_array( $result ) ) {
+			return new WP_Error( 'ai_error', 'Invalid AI response.', array( 'status' => 502 ) );
+		}
+		$out = array(
+			'title'            => isset( $result['title'] ) ? $result['title'] : '',
+			'content'          => isset( $result['content'] ) ? $result['content'] : '',
+			'skills_required'  => isset( $result['skills_required'] ) ? $result['skills_required'] : '',
+			'tags'             => isset( $result['tags'] ) ? $result['tags'] : '',
+		);
+		return rest_ensure_response( $out );
+	}
+
+	/**
+	 * POST /ai/generate-resume — body: prompt. Returns title, content.
+	 */
+	public function ai_generate_resume( $request ) {
+		$params = $request->get_json_params();
+		$prompt = isset( $params['prompt'] ) ? sanitize_textarea_field( $params['prompt'] ) : '';
+		$ai = new HR_Ecosystem_OpenAI();
+		$result = $ai->generate_resume( $prompt );
+		if ( is_wp_error( $result ) ) {
+			return new WP_Error( 'ai_error', $result->get_error_message(), array( 'status' => 502 ) );
+		}
+		if ( ! is_array( $result ) ) {
+			return new WP_Error( 'ai_error', 'Invalid AI response.', array( 'status' => 502 ) );
+		}
+		$out = array(
+			'title'   => isset( $result['title'] ) ? $result['title'] : '',
+			'content' => isset( $result['content'] ) ? $result['content'] : '',
+		);
+		return rest_ensure_response( $out );
 	}
 }

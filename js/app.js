@@ -93,13 +93,14 @@
 
   function renderProfile() {
     var p = profile || {};
-    var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '—';
+    var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || p.display_name || '—';
     var mode = getAppMode();
+    var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (p.role === 'candidate' ? 'Candidate' : (p.role || '—'))));
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
-    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(p.role || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
     html += '<div class="field"><div class="field-label">Current mode</div><div class="field-value">' + escapeHtml(mode === 'employer' ? 'Posting vacancies' : 'Looking for job') + '</div></div>';
     html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">Skills</div><div class="field-value">' + escapeHtml(p.hr_skills || '—') + '</div></div>';
@@ -826,23 +827,8 @@
     }
     showLoading('Logging in...');
     window.HR_AUTH.ensureAuth()
-      .then(function (data) {
-        if (data && data.user_id && !data.role) {
-          return window.HR_API.get('/me').then(function (me) {
-            profile = me;
-            return me;
-          });
-        }
-        if (data && (data.role || data.id)) {
-          profile = data;
-          return data;
-        }
-        return window.HR_API.get('/me').then(function (me) {
-          profile = me;
-          return me;
-        });
-      })
-      .then(function () {
+      .then(function (me) {
+        profile = me || profile;
         goTo('home');
       })
       .catch(function (e) {

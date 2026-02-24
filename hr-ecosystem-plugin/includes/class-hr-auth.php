@@ -84,6 +84,11 @@ class HR_Ecosystem_Auth {
 
 		if ( ! empty( $users ) ) {
 			$user = $users[0];
+			// Sync Telegram name on every login
+			if ( ! empty( $tg_user['first_name'] ) || ! empty( $tg_user['last_name'] ) ) {
+				update_user_meta( $user->ID, 'first_name', $tg_user['first_name'] ?? '' );
+				update_user_meta( $user->ID, 'last_name', $tg_user['last_name'] ?? '' );
+			}
 		} else {
 			// 2. Register new user
 			$username = 'tg_' . $tg_id;

@@ -52,7 +52,7 @@
         if (data.token) {
           window.HR_API.setToken(data.token);
         }
-        return data;
+        return window.HR_API.get('/me').then(function (me) { return me; });
       });
   }
 
