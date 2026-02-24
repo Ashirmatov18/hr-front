@@ -25,10 +25,7 @@
     var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/auth';
     return fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': '1',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ initData: initData }),
     })
       .then(function (res) {

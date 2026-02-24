@@ -17,7 +17,6 @@
       method: method,
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': '1',
       },
     };
     var token = getToken();
@@ -70,7 +69,7 @@
     var opts = {
       method: 'POST',
       body: form,
-      headers: { 'ngrok-skip-browser-warning': '1' },
+      headers: {},
     };
     var token = getToken();
     if (token) {
