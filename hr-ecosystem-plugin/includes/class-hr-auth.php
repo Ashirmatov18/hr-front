@@ -85,9 +85,13 @@ class HR_Ecosystem_Auth {
 		if ( ! empty( $users ) ) {
 			$user = $users[0];
 			// Sync Telegram name on every login
-			if ( ! empty( $tg_user['first_name'] ) || ! empty( $tg_user['last_name'] ) ) {
-				update_user_meta( $user->ID, 'first_name', $tg_user['first_name'] ?? '' );
-				update_user_meta( $user->ID, 'last_name', $tg_user['last_name'] ?? '' );
+			$fn = $tg_user['first_name'] ?? '';
+			$ln = $tg_user['last_name'] ?? '';
+			update_user_meta( $user->ID, 'first_name', $fn );
+			update_user_meta( $user->ID, 'last_name', $ln );
+			$display = trim( $fn . ' ' . $ln );
+			if ( $display ) {
+				wp_update_user( array( 'ID' => $user->ID, 'display_name' => $display ) );
 			}
 		} else {
 			// 2. Register new user
@@ -109,10 +113,12 @@ class HR_Ecosystem_Auth {
 
 			$user = get_user_by( 'id', $user_id );
 			
-			// Save Telegram metadata
+			// Save Telegram metadata and display name
 			update_user_meta( $user_id, 'telegram_id', $tg_id );
 			update_user_meta( $user_id, 'first_name', $tg_user['first_name'] ?? '' );
 			update_user_meta( $user_id, 'last_name', $tg_user['last_name'] ?? '' );
+			$display = trim( ( $tg_user['first_name'] ?? '' ) . ' ' . ( $tg_user['last_name'] ?? '' ) );
+			wp_update_user( array( 'ID' => $user_id, 'display_name' => $display ?: $user->user_login ) );
 			// Default status
 			update_user_meta( $user_id, 'hr_status', 'passive' );
 			// Role: new user from Telegram = candidate (соискатель)

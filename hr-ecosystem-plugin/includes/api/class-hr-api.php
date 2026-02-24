@@ -299,11 +299,15 @@ class HR_Ecosystem_API {
 			$hr_role = 'admin';
 		}
 
+		$first = $user->first_name ?: '';
+		$last  = $user->last_name ?: '';
+		$display_name = $user->display_name ?: trim( $first . ' ' . $last ) ?: $user->user_login;
+
 		return array(
 			'id'           => $user_id,
-			'first_name'   => $user->first_name ?: '',
-			'last_name'    => $user->last_name  ?: '',
-			'display_name' => $user->display_name ?: '',
+			'first_name'   => $first,
+			'last_name'    => $last,
+			'display_name' => $display_name,
 			'role'         => $hr_role,
 			'hr_status'    => get_user_meta( $user_id, 'hr_status',    true ) ?: 'passive',
 			'linkedin_url' => get_user_meta( $user_id, 'linkedin_url', true ) ?: '',
@@ -347,23 +351,13 @@ class HR_Ecosystem_API {
 			return new WP_Error( 'rest_not_logged_in', 'User is not logged in.', array( 'status' => 401 ) );
 		}
 
-		$has_badge = (bool) get_user_meta( $user_id, 'club_badge', true );
-
 		$args = array(
 			'post_type'      => 'vacancy',
-			'posts_per_page' => 20,
+			'posts_per_page' => 50,
 			'post_status'    => 'publish',
+			'orderby'        => 'date',
+			'order'          => 'DESC',
 		);
-
-		if ( ! $has_badge ) {
-			$args['tax_query'] = array(
-				array(
-					'taxonomy' => 'vacancy_category',
-					'field'    => 'slug',
-					'terms'    => 'public',
-				),
-			);
-		}
 
 		$query     = new WP_Query( $args );
 		$vacancies = array();

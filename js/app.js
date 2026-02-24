@@ -56,9 +56,12 @@
     if (!mode) {
       return renderModeChoice();
     }
-    var role = (profile && profile.role) || 'candidate';
-    var name = (profile && (profile.first_name || profile.last_name ? (profile.first_name + ' ' + profile.last_name).trim() : '')) || 'User';
-    if (!name) name = 'User';
+    var name = 'User';
+    if (profile) {
+      var fn = (profile.first_name || '').trim();
+      var ln = (profile.last_name || '').trim();
+      name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
+    }
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
     html += '<p class="greeting">Welcome back</p>';
@@ -717,11 +720,21 @@
     currentScreen = screen;
     showLoading();
     if (screen === 'home') {
-      setContent(renderHome());
+      window.HR_API.get('/me').then(function (me) {
+        profile = me;
+        setContent(renderHome());
+      }).catch(function () {
+        setContent(renderHome());
+      });
       return;
     }
     if (screen === 'profile') {
-      setContent(renderProfile());
+      window.HR_API.get('/me').then(function (me) {
+        profile = me;
+        setContent(renderProfile());
+      }).catch(function (e) {
+        showError(e.message || 'Failed to load profile');
+      });
       return;
     }
     if (screen === 'vacancies') {
@@ -749,14 +762,23 @@
     }
     if (screen === 'resume') {
       window.HR_API.get('/resumes/me').then(function (r) {
-        var resumeData = (r && r.resume !== undefined) ? r.resume : r;
-        if (!resumeData || resumeData === null || (!resumeData.id && !resumeData.title && !resumeData.content)) {
-          setContent(renderResumeForm({}));
-        } else {
+        var resumeData = null;
+        if (r && typeof r === 'object') {
+          if (r.resume !== undefined) resumeData = r.resume;
+          else if (r.id || r.title || r.content) resumeData = r;
+        }
+        if (resumeData && resumeData !== null && (resumeData.id || resumeData.title || resumeData.content)) {
           setContent(renderResumeView(resumeData));
+        } else {
+          setContent(renderResumeForm({}));
         }
       }).catch(function (e) {
-        setContent(renderResumeForm({}));
+        var msg = (e.message || 'Не удалось загрузить резюме.') + ' Проверьте интернет и попробуйте снова.';
+        var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My resume</h1></div>';
+        html += '<div class="error">' + escapeHtml(msg) + '</div>';
+        html += '<button type="button" class="btn-back" data-screen="resume">Повторить</button>';
+        html += ' <button type="button" class="btn-back" data-screen="home">На главную</button></div>';
+        setContent(html);
       });
       return;
     }
