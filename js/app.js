@@ -80,6 +80,7 @@
     }
     html += '<p class="section-label">Account</p>';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
+    html += '<p class="app-build">HR Ecosystem · Build 2024.02.24</p>';
     html += '</div></div>';
     return html;
   }
@@ -179,6 +180,7 @@
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Vacancies</h1></div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
+      html += '<p class="vacancies-hint">Если вы создали вакансию в админке WordPress — привяжите её к категории <strong>Public</strong> или включите <strong>Club badge</strong> в профиле пользователя.</p>';
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       vacancies.forEach(function (v, i) {
@@ -514,7 +516,10 @@
         }).catch(function (e) {
           resumeAiBtn.disabled = false;
           resumeAiBtn.textContent = 'Generate with AI';
-          alert(e.message || 'AI generation failed. Check backend has /ai/generate-resume.');
+          var msg = e.message || 'AI generation failed.';
+          if (e.status === 404 || (msg && (msg.indexOf('маршрут') !== -1 || msg.indexOf('route') !== -1 || msg.indexOf('not found') !== -1)))
+            msg = 'Функция AI пока недоступна: обновите плагин на WordPress (должны быть маршруты /ai/generate-resume и OpenAI API Key в настройках).';
+          alert(msg);
         });
       };
     }
@@ -699,7 +704,10 @@
         }).catch(function (e) {
           vacancyAiBtn.disabled = false;
           vacancyAiBtn.textContent = 'Generate description with AI';
-          alert(e.message || 'AI parsing failed. Check backend has /ai/parse-vacancy and OpenAI key.');
+          var msg = e.message || 'AI parsing failed.';
+          if (e.status === 404 || (msg && (msg.indexOf('маршрут') !== -1 || msg.indexOf('route') !== -1 || msg.indexOf('not found') !== -1)))
+            msg = 'Функция AI пока недоступна: обновите плагин на WordPress (маршруты /ai/parse-vacancy и OpenAI API Key в настройках).';
+          alert(msg);
         });
       };
     }

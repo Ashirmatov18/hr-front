@@ -1,17 +1,17 @@
-/* HR Ecosystem Mini App — clean, minimal, Telegram-friendly */
+/* HR Ecosystem Mini App — clean, minimal, Telegram-friendly — Build 2024.02 */
 :root {
-  --hr-bg: #eef0f4;
+  --hr-bg: #f0fdfa;
   --hr-card-bg: #ffffff;
-  --hr-primary: #2563eb;
-  --hr-primary-hover: #1d4ed8;
-  --hr-accent: #0ea5e9;
-  --hr-text: #1e293b;
+  --hr-primary: #0d9488;
+  --hr-primary-hover: #0f766e;
+  --hr-accent: #14b8a6;
+  --hr-text: #134e4a;
   --hr-text-secondary: #64748b;
-  --hr-border: #e2e8f0;
+  --hr-border: #ccfbf1;
   --hr-radius: 14px;
   --hr-radius-sm: 10px;
-  --hr-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  --hr-shadow-hover: 0 4px 14px rgba(0,0,0,0.08);
+  --hr-shadow: 0 2px 8px rgba(13, 148, 136, 0.08);
+  --hr-shadow-hover: 0 4px 14px rgba(13, 148, 136, 0.12);
   --hr-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -70,6 +70,16 @@ body {
   line-height: 1.5;
 }
 
+.vacancies-hint {
+  font-size: 13px;
+  color: var(--hr-text-secondary);
+  margin: 12px 0 0;
+  padding: 12px;
+  background: rgba(13, 148, 136, 0.06);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
 /* Screen layout */
 .screen {
   max-width: 420px;
@@ -113,36 +123,40 @@ body {
 
 /* Home */
 .home .welcome-card {
-  background: linear-gradient(135deg, var(--hr-card-bg) 0%, #f1f5f9 100%);
+  background: linear-gradient(145deg, #ccfbf1 0%, var(--hr-card-bg) 50%, #f0fdfa 100%);
   border-radius: var(--hr-radius);
   padding: 24px;
   margin-bottom: 28px;
   box-shadow: var(--hr-shadow);
   border: 1px solid var(--hr-border);
+  border-top: 4px solid var(--hr-primary);
   animation: hr-fade-in 0.35s ease-out;
 }
 
 .home .welcome-card .greeting {
-  font-size: 15px;
-  color: var(--hr-text-secondary);
-  margin: 0 0 4px 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--hr-primary);
+  margin: 0 0 6px 0;
+  font-weight: 600;
 }
 
 .home .welcome-card .user-name {
   font-size: 22px;
-  font-weight: 600;
-  margin: 0 0 8px 0;
+  font-weight: 700;
+  margin: 0 0 10px 0;
   color: var(--hr-text);
 }
 
 .home .role-badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   text-transform: capitalize;
-  background: rgba(37, 99, 235, 0.12);
+  background: rgba(13, 148, 136, 0.15);
   color: var(--hr-primary);
 }
 
@@ -162,6 +176,17 @@ body {
   padding: 0 4px;
 }
 .home .section-label:first-of-type { margin-top: 0; }
+
+/* Build label — видно, что фронт обновился */
+.app-build {
+  margin-top: 24px;
+  padding: 10px 14px;
+  font-size: 11px;
+  color: var(--hr-primary);
+  background: rgba(13, 148, 136, 0.08);
+  border-radius: 8px;
+  text-align: center;
+}
 
 .nav-cards {
   display: flex;
