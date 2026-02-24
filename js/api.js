@@ -28,11 +28,27 @@
       opts.body = typeof body === 'string' ? body : JSON.stringify(body);
     }
     return fetch(url, opts).then(function (res) {
-      var contentType = res.headers.get('content-type');
-      var next = contentType && contentType.indexOf('application/json') !== -1 ? res.json() : res.text();
-      return next.then(function (data) {
+      var contentType = res.headers.get('content-type') || '';
+      return res.text().then(function (text) {
+        var data;
+        var isJson = contentType.indexOf('application/json') !== -1;
+        if (isJson && text) {
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            if (text.trim().indexOf('<') === 0) {
+              var err = new Error('Server returned HTML instead of JSON. Check API URL (config.js), CORS and ngrok.');
+              err.status = res.status;
+              err.data = text.substring(0, 200);
+              throw err;
+            }
+            throw new Error('Invalid JSON from server: ' + text.substring(0, 80));
+          }
+        } else {
+          data = text;
+        }
         if (!res.ok) {
-          var err = new Error(data.message || data.code || 'Request failed');
+          var err = new Error((data && data.message) || (data && data.code) || 'Request failed');
           err.status = res.status;
           err.data = data;
           throw err;
@@ -61,7 +77,18 @@
       opts.headers['Authorization'] = 'Bearer ' + token;
     }
     return fetch(url, opts).then(function (res) {
-      return res.json().then(function (data) {
+      return res.text().then(function (text) {
+        var data;
+        try {
+          data = text ? JSON.parse(text) : {};
+        } catch (e) {
+          if (text && text.trim().indexOf('<') === 0) {
+            var err = new Error('Server returned HTML instead of JSON. Check API URL and CORS.');
+            err.status = res.status;
+            throw err;
+          }
+          throw new Error('Invalid server response');
+        }
         if (!res.ok) {
           var err = new Error(data.message || data.code || 'Upload failed');
           err.status = res.status;

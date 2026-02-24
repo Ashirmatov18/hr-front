@@ -25,11 +25,23 @@
     var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/auth';
     return fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': '1',
+      },
       body: JSON.stringify({ initData: initData }),
     })
       .then(function (res) {
-        return res.json().then(function (data) {
+        return res.text().then(function (text) {
+          var data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (e) {
+            if (text && text.trim().indexOf('<') === 0) {
+              throw new Error('Server returned HTML instead of JSON. Check: 1) API URL in config.js (e.g. ngrok URL), 2) CORS on backend, 3) ngrok — open the URL once in browser and confirm if it shows a warning.');
+            }
+            throw new Error('Invalid server response: ' + (text ? text.substring(0, 100) : res.status));
+          }
           if (!res.ok) {
             var err = new Error(data.message || 'Auth failed');
             err.status = res.status;
@@ -91,9 +103,7 @@
     if (initData) {
       return login();
     }
-    // Not in Telegram: try dev token (from URL, localStorage, or config)
     var token = getDevToken();
-    if (token) {
     if (token) {
       window.HR_API.setToken(token);
       return window.HR_API.get('/me').then(function (me) {
@@ -105,8 +115,6 @@
       });
     }
     throw new Error('DEV: No token. Get token from WordPress (see instructions) and paste below or set DEV_TOKEN in config.js');
-  }
-    return Promise.reject(new Error('Not opened in Telegram or initData missing'));
   }
 
   window.HR_AUTH = {
