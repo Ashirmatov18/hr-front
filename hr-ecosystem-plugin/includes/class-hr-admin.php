@@ -50,6 +50,14 @@ class HR_Ecosystem_Admin {
 			'dashicons-groups',
 			50
 		);
+		add_submenu_page(
+			'hr-ecosystem',
+			__( 'Match suggestions', 'hr-ecosystem' ),
+			__( 'Match suggestions', 'hr-ecosystem' ),
+			'manage_options',
+			'hr-match-suggestions',
+			array( $this, 'render_match_suggestions_page' )
+		);
 	}
 
 	/**
@@ -163,6 +171,33 @@ class HR_Ecosystem_Admin {
 				<?php wp_nonce_field( 'hr_export_action', 'hr_export_nonce' ); ?>
 				<button type="submit" class="button button-primary">Export to CSV</button>
 			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Страница «Предложения мэтчей»: заявки без мэтча, кнопка «Создать мэтч».
+	 */
+	public function render_match_suggestions_page() {
+		wp_enqueue_script(
+			'hr-admin-matches',
+			HR_ECO_URL . 'assets/js/admin-matches.js',
+			array( 'jquery' ),
+			'1.0',
+			true
+		);
+		?>
+		<div class="wrap">
+			<h1><?php esc_html_e( 'Match suggestions', 'hr-ecosystem' ); ?></h1>
+			<p class="description"><?php esc_html_e( 'Applications that do not have a match yet. Click "Create match" to link the vacancy and the candidate.', 'hr-ecosystem' ); ?></p>
+			<div id="hr-match-suggestions-loading" style="margin: 1em 0;"><?php esc_html_e( 'Loading…', 'hr-ecosystem' ); ?></div>
+			<div id="hr-match-suggestions-list" style="display:none;"></div>
+			<div id="hr-match-suggestions-empty" style="display:none;" class="notice notice-info">
+				<p><?php esc_html_e( 'No suggestions. All applications already have a match, or there are no applications.', 'hr-ecosystem' ); ?></p>
+			</div>
+			<div id="hr-match-suggestions-error" style="display:none;" class="notice notice-error">
+				<p></p>
+			</div>
 		</div>
 		<?php
 	}

@@ -70,6 +70,35 @@ body {
   line-height: 1.5;
 }
 
+.error-detail {
+  margin: 12px 0;
+  padding: 12px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: left;
+  word-break: break-word;
+}
+
+.debug-message {
+  margin: 0 0 16px;
+  padding: 12px;
+  background: rgba(13, 148, 136, 0.1);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.debug-json {
+  margin: 8px 0;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 12px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .vacancies-hint {
   font-size: 13px;
   color: var(--hr-text-secondary);

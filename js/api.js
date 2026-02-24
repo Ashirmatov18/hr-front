@@ -22,6 +22,7 @@
     var token = getToken();
     if (token) {
       opts.headers['Authorization'] = 'Bearer ' + token;
+      opts.headers['X-HR-Token'] = token;
     }
     if (body !== undefined && body !== null) {
       opts.body = typeof body === 'string' ? body : JSON.stringify(body);

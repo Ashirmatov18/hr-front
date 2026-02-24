@@ -17,10 +17,24 @@
     el.innerHTML = '<div class="loading">' + (msg || 'Loading...') + '</div>';
   }
 
-  function showError(msg) {
+  function showError(msg, err) {
     var el = document.getElementById('app-content');
     if (!el) return;
-    el.innerHTML = '<div class="error">' + (msg || 'Something went wrong.') + '</div>';
+    var detail = '';
+    if (err) {
+      if (err.status) detail += ' Код: ' + err.status + '.';
+      if (err.data) {
+        if (typeof err.data === 'object' && err.data.message) detail += ' ' + err.data.message;
+        else if (typeof err.data === 'string') detail += ' ' + err.data.substring(0, 200);
+        else detail += ' ' + JSON.stringify(err.data).substring(0, 200);
+      }
+    }
+    el.innerHTML = '<div class="error">' + escapeHtml(msg || 'Something went wrong.') +
+      (detail ? '<p class="error-detail">' + escapeHtml(detail) + '</p>' : '') +
+      '<button type="button" class="btn-secondary" id="error-retry">Повторить</button> ' +
+      '<button type="button" class="btn-back" data-screen="home">На главную</button></div>';
+    var btn = document.getElementById('error-retry');
+    if (btn) btn.addEventListener('click', function () { location.reload(); });
   }
 
   function getAppMode() {
@@ -83,6 +97,7 @@
     }
     html += '<p class="section-label">Account</p>';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="debug"><span>Диагностика бэкенда</span><span class="arrow">›</span></button>';
     html += '<p class="app-build">HR Ecosystem · Build 2024.02.24</p>';
     html += '</div></div>';
     return html;
@@ -741,7 +756,7 @@
         profile = me;
         setContent(renderProfile());
       }).catch(function (e) {
-        showError(e.message || 'Failed to load profile');
+        showError(e.message || 'Failed to load profile', e);
       });
       return;
     }
@@ -755,7 +770,7 @@
         lastVacanciesAppliedIds = appliedIds;
         setContent(renderVacanciesWithRespond(list, appliedIds));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load vacancies');
+        showError(e.message || 'Failed to load vacancies', e);
       });
       return;
     }
@@ -764,7 +779,7 @@
         lastMyVacanciesList = ensureArray(raw);
         setContent(renderMyVacanciesList(lastMyVacanciesList));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
@@ -795,7 +810,7 @@
         var list = ensureArray(raw);
         setContent(renderList('My applications', list, function (a) { return (a.vacancy_title || a.vacancy_id) + ' — ' + (a.status || ''); }));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
@@ -804,7 +819,7 @@
         var list = ensureArray(raw);
         setContent(renderMatchesWithReaction(list));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
@@ -813,7 +828,7 @@
         lastOpenedResumesList = ensureArray(raw);
         setContent(renderOpenedResumesList(lastOpenedResumesList));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
@@ -822,7 +837,7 @@
         lastPendingApprovalList = ensureArray(raw);
         setContent(renderPendingApprovalList(lastPendingApprovalList));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
@@ -831,12 +846,30 @@
         lastAllCandidatesList = ensureArray(raw);
         setContent(renderAllCandidatesList(lastAllCandidatesList));
       }).catch(function (e) {
-        showError(e.message || 'Failed to load');
+        showError(e.message || 'Failed to load', e);
       });
       return;
     }
     if (screen === 'create-vacancy') {
       setContent(renderCreateVacancyForm());
+      return;
+    }
+    if (screen === 'debug') {
+      window.HR_API.get('/debug').then(function (data) {
+        var html = '<div class="screen debug"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Диагностика бэкенда</h1></div>';
+        html += '<div class="profile-card">';
+        html += '<p class="debug-message">' + escapeHtml(data.message || '') + '</p>';
+        html += '<div class="field"><div class="field-label">user_id</div><div class="field-value">' + (data.user_id != null ? data.user_id : '—') + '</div></div>';
+        html += '<div class="field"><div class="field-label">Вакансий на бэке</div><div class="field-value">' + (data.vacancies_count != null ? data.vacancies_count : '—') + '</div></div>';
+        html += '<div class="field"><div class="field-label">ID резюме</div><div class="field-value">' + (data.resume_id != null ? data.resume_id : '—') + '</div></div>';
+        if (data.profile && typeof data.profile === 'object') {
+          html += '<p class="section-label">Профиль с бэка</p><pre class="debug-json">' + escapeHtml(JSON.stringify(data.profile, null, 2)) + '</pre>';
+        }
+        html += '</div><button type="button" class="btn-back" data-screen="home">Назад</button></div>';
+        setContent(html);
+      }).catch(function (e) {
+        showError('Не удалось получить ответ от бэкенда. Проверьте URL в config.js и что плагин обновлён.', e);
+      });
       return;
     }
     setContent(renderHome());
@@ -897,7 +930,7 @@
           }
           return;
         }
-        showError(msg);
+        showError(msg, e);
       });
   }
 

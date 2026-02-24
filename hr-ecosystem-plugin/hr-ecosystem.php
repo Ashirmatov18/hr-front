@@ -76,6 +76,10 @@ class HR_Ecosystem {
 			$headers = apache_request_headers();
 			$auth_header = isset( $headers['Authorization'] ) ? $headers['Authorization'] : '';
 		}
+		// Fallback: некоторые хостинги обрезают Authorization — принимаем X-HR-Token: <token>
+		if ( ( ! $auth_header || $auth_header === '' ) && ! empty( $_SERVER['HTTP_X_HR_TOKEN'] ) ) {
+			$auth_header = 'Bearer ' . trim( $_SERVER['HTTP_X_HR_TOKEN'] );
+		}
 		if ( $auth_header && preg_match( '/Bearer\s+(.+)/i', $auth_header, $m ) ) {
 			$token = sanitize_text_field( trim( $m[1] ) );
 			$users = get_users( array(
@@ -124,7 +128,7 @@ class HR_Ecosystem {
 			header( 'Access-Control-Allow-Origin: *' );
 		}
 		header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
-		header( 'Access-Control-Allow-Headers: Authorization, Content-Type, ngrok-skip-browser-warning' );
+		header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-HR-Token, ngrok-skip-browser-warning' );
 		header( 'Access-Control-Max-Age: 86400' );
 		exit( 0 );
 	}
@@ -141,7 +145,7 @@ class HR_Ecosystem {
 				header( 'Access-Control-Allow-Origin: *' );
 			}
 			header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
-			header( 'Access-Control-Allow-Headers: Authorization, Content-Type, ngrok-skip-browser-warning' );
+			header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-HR-Token, ngrok-skip-browser-warning' );
 			header( 'Access-Control-Allow-Credentials: false' );
 		}
 		return $served;

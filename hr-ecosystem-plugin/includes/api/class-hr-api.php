@@ -62,6 +62,13 @@ class HR_Ecosystem_API {
 			'permission_callback' => '__return_true',
 		) );
 
+		// Диагностика: что видит бэкенд (user_id, профиль, кол-во вакансий, есть ли резюме)
+		register_rest_route( $namespace, '/debug', array(
+			'methods'             => 'GET',
+			'callback'            => array( $this, 'debug_info' ),
+			'permission_callback' => '__return_true',
+		) );
+
 		register_rest_route( $namespace, '/me', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'update_profile' ),
@@ -211,6 +218,9 @@ class HR_Ecosystem_API {
 			$headers     = apache_request_headers();
 			$auth_header = $headers['Authorization'] ?? '';
 		}
+		if ( ( ! $auth_header || $auth_header === '' ) && ! empty( $_SERVER['HTTP_X_HR_TOKEN'] ) ) {
+			$auth_header = 'Bearer ' . trim( $_SERVER['HTTP_X_HR_TOKEN'] );
+		}
 
 		if ( $auth_header && preg_match( '/Bearer\s+(.+)/i', $auth_header, $matches ) ) {
 			$token      = sanitize_text_field( trim( $matches[1] ) );
@@ -303,7 +313,7 @@ class HR_Ecosystem_API {
 		$last  = $user->last_name ?: '';
 		$display_name = $user->display_name ?: trim( $first . ' ' . $last ) ?: $user->user_login;
 
-		return array(
+		$data = array(
 			'id'           => $user_id,
 			'first_name'   => $first,
 			'last_name'    => $last,
@@ -315,6 +325,46 @@ class HR_Ecosystem_API {
 			'hr_skills'    => get_user_meta( $user_id, 'hr_skills', true ) ?: '',
 			'hr_tags'      => get_user_meta( $user_id, 'hr_tags', true ) ?: '',
 		);
+		return rest_ensure_response( $data );
+	}
+
+	/**
+	 * GET /debug — диагностика: user_id, профиль, кол-во вакансий, есть ли резюме.
+	 */
+	public function debug_info( $request ) {
+		$user_id = $this->ensure_current_user();
+		$vacancies_count = 0;
+		$resume_id = 0;
+		$profile_data = null;
+
+		if ( $user_id > 0 ) {
+			$profile_response = $this->get_profile( $request );
+			$profile_data = $profile_response instanceof WP_REST_Response
+				? $profile_response->get_data()
+				: ( is_array( $profile_response ) ? $profile_response : null );
+			$vacancies_query = new WP_Query( array(
+				'post_type'      => 'vacancy',
+				'post_status'    => 'publish',
+				'posts_per_page' => -1,
+				'fields'         => 'ids',
+			) );
+			$vacancies_count = $vacancies_query->found_posts;
+			wp_reset_postdata();
+			$resume = $this->get_resume_by_author( $user_id );
+			if ( $resume ) {
+				$resume_id = (int) $resume->ID;
+			}
+		}
+
+		return rest_ensure_response( array(
+			'user_id'         => $user_id,
+			'profile'         => $profile_data,
+			'vacancies_count' => $vacancies_count,
+			'resume_id'       => $resume_id,
+			'message'         => $user_id > 0
+				? 'OK: пользователь найден. Вакансий: ' . $vacancies_count . ', резюме: ' . ( $resume_id ? 'есть' : 'нет' )
+				: 'Ошибка: не авторизован (нет или неверный Bearer token).',
+		) );
 	}
 
 	public function update_profile( $request ) {
