@@ -17,6 +17,7 @@
       method: method,
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': '1',
       },
     };
     var token = getToken();
@@ -53,10 +54,11 @@
     var opts = {
       method: 'POST',
       body: form,
+      headers: { 'ngrok-skip-browser-warning': '1' },
     };
     var token = getToken();
     if (token) {
-      opts.headers = { 'Authorization': 'Bearer ' + token };
+      opts.headers['Authorization'] = 'Bearer ' + token;
     }
     return fetch(url, opts).then(function (res) {
       return res.json().then(function (data) {
@@ -89,5 +91,13 @@
     },
     getToken: getToken,
     uploadMedia: uploadMedia,
+    /** AI: generate resume title + content from prompt. Backend: POST /ai/generate-resume { prompt } => { title, content } */
+    generateResume: function (prompt) {
+      return request('POST', '/ai/generate-resume', { prompt: prompt || '' });
+    },
+    /** AI: parse raw vacancy text into title, content, skills, tags. Backend: POST /ai/parse-vacancy { raw_text } => { title, content, skills_required, tags } */
+    parseVacancyWithAi: function (rawText) {
+      return request('POST', '/ai/parse-vacancy', { raw_text: rawText || '' });
+    },
   };
 })();

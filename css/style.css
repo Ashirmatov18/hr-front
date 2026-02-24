@@ -330,6 +330,22 @@ body {
   cursor: not-allowed;
 }
 
+.btn-secondary {
+  display: inline-block;
+  padding: 10px 18px;
+  margin-right: 10px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tg-theme-button-text-color, #fff);
+  background: var(--tg-theme-secondary-bg-color, #5a6268);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.btn-secondary:hover { opacity: 0.9; }
+.btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .btn-sm {
   padding: 6px 12px;
   font-size: 13px;

@@ -112,7 +112,16 @@
     return html;
   }
 
+  function ensureArray(val) {
+    if (Array.isArray(val)) return val;
+    if (val && typeof val === 'object' && Array.isArray(val.items)) return val.items;
+    if (val && typeof val === 'object' && Array.isArray(val.data)) return val.data;
+    if (val && typeof val === 'object' && Array.isArray(val.list)) return val.list;
+    return [];
+  }
+
   function renderList(title, items, itemLabel) {
+    items = ensureArray(items);
     itemLabel = itemLabel || function (x) { return x.title || x.vacancy_title || x.id; };
     var html = '<div class="screen list">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">' + escapeHtml(title) + '</h1></div>';
@@ -130,9 +139,15 @@
   }
 
   function renderResumeView(r) {
+    r = r || {};
+    var firstName = r.first_name || (profile && profile.first_name) || '';
+    var lastName = r.last_name || (profile && profile.last_name) || '';
+    var fullName = (firstName + ' ' + lastName).trim() || '—';
     var html = '<div class="screen" id="resume-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My resume</h1></div>';
-    html += '<div class="content-card"><p class="content-title">' + escapeHtml(r.title || 'Resume') + '</p>';
-    html += '<div class="content-body">' + escapeHtml(r.content || '') + '</div>';
+    html += '<div class="content-card">';
+    html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(fullName) + '</div></div>';
+    html += '<div class="field"><div class="field-label">Title</div><div class="field-value">' + escapeHtml(r.title || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">About</div><div class="content-body">' + escapeHtml(r.content || '') + '</div></div>';
     if (r.cv_url) html += '<a href="' + escapeHtml(r.cv_url) + '" target="_blank" class="link-cv">Download CV</a>';
     html += '</div>';
     html += '<button type="button" class="btn-primary" id="resume-edit-btn">Edit resume</button>';
@@ -143,16 +158,22 @@
 
   function renderResumeForm(r) {
     r = r || {};
-    var html = '<div class="screen" id="resume-form-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="resume">‹</button><h1 class="screen-title">' + (r.id ? 'Edit resume' : 'Create resume') + '</h1></div>';
-    html += '<div class="form-card"><label class="field-label">Title</label><input type="text" id="resume-title" value="' + escapeHtml(r.title || '') + '" placeholder="e.g. Senior Developer" />';
+    var backScreen = r.id ? 'resume' : 'home';
+    var html = '<div class="screen" id="resume-form-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + backScreen + '">‹</button><h1 class="screen-title">' + (r.id ? 'Edit resume' : 'Create resume') + '</h1></div>';
+    html += '<div class="form-card">';
+    html += '<label class="field-label">First name</label><input type="text" id="resume-first-name" value="' + escapeHtml(r.first_name || (profile && profile.first_name) || '') + '" placeholder="First name" />';
+    html += '<label class="field-label">Last name</label><input type="text" id="resume-last-name" value="' + escapeHtml(r.last_name || (profile && profile.last_name) || '') + '" placeholder="Last name" />';
+    html += '<label class="field-label">Title</label><input type="text" id="resume-title" value="' + escapeHtml(r.title || '') + '" placeholder="e.g. Senior Developer" />';
     html += '<label class="field-label">About you (text)</label><textarea id="resume-content" rows="6" placeholder="Experience, skills...">' + escapeHtml(r.content || '') + '</textarea>';
     html += '<label class="field-label">Attach CV (PDF, DOC)</label><input type="file" id="resume-cv-file" accept=".pdf,.doc,.docx" class="input-file" />';
     if (r.cv_url) html += '<p class="hint">Current file: <a href="' + escapeHtml(r.cv_url) + '" target="_blank">Download CV</a></p>';
+    html += '<button type="button" class="btn-secondary" id="resume-ai-btn">Generate with AI</button>';
     html += '<button type="button" class="btn-primary" id="resume-save-btn">Save</button></div></div>';
     return html;
   }
 
   function renderVacanciesWithRespond(vacancies, appliedIds) {
+    vacancies = ensureArray(vacancies);
     appliedIds = appliedIds || {};
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Vacancies</h1></div>';
     if (!vacancies || vacancies.length === 0) {
@@ -177,6 +198,7 @@
   }
 
   function renderMyVacanciesList(list) {
+    list = ensureArray(list);
     var html = '<div class="screen" id="my-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My vacancies</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
@@ -217,6 +239,7 @@
   }
 
   function renderMatchesWithReaction(matches) {
+    matches = ensureArray(matches);
     var html = '<div class="screen" id="matches-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My matches</h1></div>';
     if (!matches || matches.length === 0) {
       html += '<div class="empty-state">No matches yet.</div>';
@@ -234,6 +257,7 @@
   }
 
   function renderOpenedResumesList(list) {
+    list = ensureArray(list);
     var html = '<div class="screen" id="opened-resumes-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Opened resumes</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No opened resumes yet.</div>';
@@ -251,6 +275,7 @@
   }
 
   function renderPendingApprovalList(list) {
+    list = ensureArray(list);
     var html = '<div class="screen" id="pending-approval-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Pending my approval</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No matches waiting for your approval.</div>';
@@ -319,6 +344,7 @@
   }
 
   function renderAllCandidatesList(list) {
+    list = ensureArray(list);
     var html = '<div class="screen" id="all-candidates-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">All candidates</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No candidates with resumes yet.</div>';
@@ -365,6 +391,7 @@
     html += '<label class="field-label">Description</label><textarea id="vacancy-content" rows="5" placeholder="Requirements, responsibilities..."></textarea>';
     html += '<label class="field-label">Required skills</label><input type="text" id="vacancy-skills" placeholder="e.g. PHP, React" />';
     html += '<label class="field-label">Tags</label><input type="text" id="vacancy-tags" placeholder="e.g. remote, full-time" />';
+    html += '<button type="button" class="btn-secondary" id="vacancy-ai-btn">Generate description with AI</button>';
     html += '<button type="button" class="btn-primary" id="vacancy-submit-btn">Publish</button></div></div>';
     return html;
   }
@@ -372,21 +399,23 @@
   function setContent(html) {
     var el = document.getElementById('app-content');
     if (el) el.innerHTML = html;
-    var buttons = document.querySelectorAll('[data-screen]');
+    var buttons = el ? el.querySelectorAll('[data-screen]') : [];
     buttons.forEach(function (btn) {
       btn.addEventListener('click', function () {
         goTo(this.getAttribute('data-screen'));
       });
     });
-    el.querySelectorAll('.mode-choice-card').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var m = this.getAttribute('data-mode');
-        if (m) {
-          setAppMode(m);
-          goTo(m === 'candidate' ? 'resume' : 'create-vacancy');
-        }
+    if (el) {
+      el.querySelectorAll('.mode-choice-card').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var m = this.getAttribute('data-mode');
+          if (m) {
+            setAppMode(m);
+            goTo(m === 'candidate' ? 'resume' : 'create-vacancy');
+          }
+        });
       });
-    });
+    }
     var pmCandidate = document.getElementById('profile-mode-candidate');
     if (pmCandidate) pmCandidate.onclick = function () { setAppMode('candidate'); goTo('home'); };
     var pmEmployer = document.getElementById('profile-mode-employer');
@@ -403,7 +432,8 @@
     if (editBtn) {
       editBtn.onclick = function () {
         window.HR_API.get('/resumes/me').then(function (r) {
-          setContent(renderResumeForm(r));
+          var resumeData = (r && r.resume !== undefined) ? r.resume : r;
+          setContent(renderResumeForm(resumeData || {}));
         }).catch(function () {
           setContent(renderResumeForm({}));
         });
@@ -426,14 +456,25 @@
     var saveBtn = document.getElementById('resume-save-btn');
     if (saveBtn) {
       saveBtn.onclick = function () {
-        var title = (document.getElementById('resume-title') && document.getElementById('resume-title').value) || '';
-        var content = (document.getElementById('resume-content') && document.getElementById('resume-content').value) || '';
+        var titleEl = document.getElementById('resume-title');
+        var contentEl = document.getElementById('resume-content');
+        var firstNameEl = document.getElementById('resume-first-name');
+        var lastNameEl = document.getElementById('resume-last-name');
+        var title = (titleEl && titleEl.value) || '';
+        var content = (contentEl && contentEl.value) || '';
+        var firstName = (firstNameEl && firstNameEl.value) || '';
+        var lastName = (lastNameEl && lastNameEl.value) || '';
         var fileInput = document.getElementById('resume-cv-file');
         var file = fileInput && fileInput.files && fileInput.files[0];
         saveBtn.disabled = true;
+        var payload = { title: title, content: content, cv_attachment_id: 0 };
+        if (firstName !== undefined) payload.first_name = firstName;
+        if (lastName !== undefined) payload.last_name = lastName;
         var doSave = function (cvId) {
-          window.HR_API.post('/resumes/me', { title: title, content: content, cv_attachment_id: cvId || 0 }).then(function (r) {
-            setContent(renderResumeView(r));
+          payload.cv_attachment_id = cvId || 0;
+          window.HR_API.post('/resumes/me', payload).then(function (r) {
+            var resumeData = (r && r.resume !== undefined) ? r.resume : r;
+            setContent(renderResumeView(resumeData || r || {}));
           }).catch(function (e) {
             saveBtn.disabled = false;
             alert(e.message || 'Failed to save');
@@ -449,6 +490,31 @@
         } else {
           doSave(0);
         }
+      };
+    }
+
+    var resumeAiBtn = document.getElementById('resume-ai-btn');
+    if (resumeAiBtn) {
+      resumeAiBtn.onclick = function () {
+        var contentEl = document.getElementById('resume-content');
+        var titleEl = document.getElementById('resume-title');
+        var prompt = (contentEl && contentEl.value) || (titleEl && titleEl.value) || '';
+        if (!prompt.trim()) {
+          alert('Enter a title or short description, then click Generate with AI.');
+          return;
+        }
+        resumeAiBtn.disabled = true;
+        resumeAiBtn.textContent = 'Generating...';
+        window.HR_API.generateResume(prompt).then(function (data) {
+          if (data && data.title && titleEl) titleEl.value = data.title;
+          if (data && data.content && contentEl) contentEl.value = data.content;
+          resumeAiBtn.disabled = false;
+          resumeAiBtn.textContent = 'Generate with AI';
+        }).catch(function (e) {
+          resumeAiBtn.disabled = false;
+          resumeAiBtn.textContent = 'Generate with AI';
+          alert(e.message || 'AI generation failed. Check backend has /ai/generate-resume.');
+        });
       };
     }
 
@@ -607,6 +673,35 @@
         });
       };
     }
+
+    var vacancyAiBtn = document.getElementById('vacancy-ai-btn');
+    if (vacancyAiBtn) {
+      vacancyAiBtn.onclick = function () {
+        var contentEl = document.getElementById('vacancy-content');
+        var rawText = (contentEl && contentEl.value) || '';
+        if (!rawText.trim()) {
+          alert('Paste the raw job description text into the Description field, then click Generate description with AI.');
+          return;
+        }
+        vacancyAiBtn.disabled = true;
+        vacancyAiBtn.textContent = 'Processing...';
+        window.HR_API.parseVacancyWithAi(rawText).then(function (data) {
+          var titleEl = document.getElementById('vacancy-title');
+          var skillsEl = document.getElementById('vacancy-skills');
+          var tagsEl = document.getElementById('vacancy-tags');
+          if (data && data.title && titleEl) titleEl.value = data.title;
+          if (data && data.content && contentEl) contentEl.value = data.content || data.excerpt || '';
+          if (data && data.skills_required && skillsEl) skillsEl.value = data.skills_required;
+          if (data && data.tags && tagsEl) tagsEl.value = data.tags;
+          vacancyAiBtn.disabled = false;
+          vacancyAiBtn.textContent = 'Generate description with AI';
+        }).catch(function (e) {
+          vacancyAiBtn.disabled = false;
+          vacancyAiBtn.textContent = 'Generate description with AI';
+          alert(e.message || 'AI parsing failed. Check backend has /ai/parse-vacancy and OpenAI key.');
+        });
+      };
+    }
   }
 
   function goTo(screen) {
@@ -622,8 +717,8 @@
     }
     if (screen === 'vacancies') {
       Promise.all([ window.HR_API.get('/vacancies'), window.HR_API.get('/applications/me') ]).then(function (arr) {
-        var list = arr[0] || [];
-        var applications = arr[1] || [];
+        var list = ensureArray(arr[0]);
+        var applications = ensureArray(arr[1] || []);
         var appliedIds = {};
         applications.forEach(function (a) { appliedIds[a.vacancy_id] = true; });
         lastVacanciesList = list;
@@ -635,8 +730,8 @@
       return;
     }
     if (screen === 'my-vacancies') {
-      window.HR_API.get('/vacancies/me').then(function (list) {
-        lastMyVacanciesList = list || [];
+      window.HR_API.get('/vacancies/me').then(function (raw) {
+        lastMyVacanciesList = ensureArray(raw);
         setContent(renderMyVacanciesList(lastMyVacanciesList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
@@ -645,15 +740,20 @@
     }
     if (screen === 'resume') {
       window.HR_API.get('/resumes/me').then(function (r) {
-        if (!r || r.resume === null || !r.id) setContent(renderResumeForm({}));
-        else setContent(renderResumeView(r));
+        var resumeData = (r && r.resume !== undefined) ? r.resume : r;
+        if (!resumeData || resumeData === null || (!resumeData.id && !resumeData.title && !resumeData.content)) {
+          setContent(renderResumeForm({}));
+        } else {
+          setContent(renderResumeView(resumeData));
+        }
       }).catch(function (e) {
         setContent(renderResumeForm({}));
       });
       return;
     }
     if (screen === 'applications') {
-      window.HR_API.get('/applications/me').then(function (list) {
+      window.HR_API.get('/applications/me').then(function (raw) {
+        var list = ensureArray(raw);
         setContent(renderList('My applications', list, function (a) { return (a.vacancy_title || a.vacancy_id) + ' — ' + (a.status || ''); }));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
@@ -661,7 +761,8 @@
       return;
     }
     if (screen === 'matches') {
-      window.HR_API.get('/matches/me').then(function (list) {
+      window.HR_API.get('/matches/me').then(function (raw) {
+        var list = ensureArray(raw);
         setContent(renderMatchesWithReaction(list));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
@@ -669,8 +770,8 @@
       return;
     }
     if (screen === 'opened-resumes') {
-      window.HR_API.get('/resumes/opened').then(function (list) {
-        lastOpenedResumesList = list || [];
+      window.HR_API.get('/resumes/opened').then(function (raw) {
+        lastOpenedResumesList = ensureArray(raw);
         setContent(renderOpenedResumesList(lastOpenedResumesList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
@@ -678,8 +779,8 @@
       return;
     }
     if (screen === 'pending-approval') {
-      window.HR_API.get('/matches/pending-approval').then(function (list) {
-        lastPendingApprovalList = list || [];
+      window.HR_API.get('/matches/pending-approval').then(function (raw) {
+        lastPendingApprovalList = ensureArray(raw);
         setContent(renderPendingApprovalList(lastPendingApprovalList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
@@ -687,8 +788,8 @@
       return;
     }
     if (screen === 'all-candidates') {
-      window.HR_API.get('/candidates').then(function (list) {
-        lastAllCandidatesList = list || [];
+      window.HR_API.get('/candidates').then(function (raw) {
+        lastAllCandidatesList = ensureArray(raw);
         setContent(renderAllCandidatesList(lastAllCandidatesList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load');
