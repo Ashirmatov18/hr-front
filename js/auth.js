@@ -23,9 +23,11 @@
     }
     var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || window.location.origin;
     var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/auth';
+    var headers = { 'Content-Type': 'application/json' };
+    if (base.indexOf('ngrok') !== -1) headers['ngrok-skip-browser-warning'] = 'true';
     return fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({ initData: initData }),
     })
       .then(function (res) {

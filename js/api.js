@@ -16,12 +16,17 @@
 
   function request(method, path, body) {
     var url = getBase() + path;
+    var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || '';
+    var isNgrok = base.indexOf('ngrok') !== -1;
     var opts = {
       method: method,
       headers: {
         'Content-Type': 'application/json',
       },
     };
+    if (isNgrok) {
+      opts.headers['ngrok-skip-browser-warning'] = 'true';
+    }
     var token = getToken();
     if (token) {
       opts.headers['Authorization'] = 'Bearer ' + token;
@@ -75,6 +80,9 @@
       body: form,
       headers: {},
     };
+    if ((window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL || '').indexOf('ngrok') !== -1) {
+      opts.headers['ngrok-skip-browser-warning'] = 'true';
+    }
     var token = getToken();
     if (token) {
       opts.headers['Authorization'] = 'Bearer ' + token;
