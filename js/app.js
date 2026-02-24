@@ -855,9 +855,18 @@
       return;
     }
     if (screen === 'debug') {
+      var debugUrl = (window.HR_API.getBase && window.HR_API.getBase()) || (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || '';
+      if (debugUrl && typeof debugUrl === 'string') {
+        debugUrl = debugUrl.replace(/\/$/, '') + (debugUrl.indexOf('/wp-json') !== -1 ? '' : '/wp-json/hr/v1') + '/debug';
+      } else {
+        debugUrl = '?';
+      }
+      var tokenSent = !!(window.HR_API.getToken && window.HR_API.getToken());
       window.HR_API.get('/debug').then(function (data) {
         var html = '<div class="screen debug"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Диагностика бэкенда</h1></div>';
         html += '<div class="profile-card">';
+        html += '<div class="field"><div class="field-label">URL запроса</div><div class="field-value debug-url">' + escapeHtml(debugUrl) + '</div></div>';
+        html += '<div class="field"><div class="field-label">Токен в приложении</div><div class="field-value">' + (tokenSent ? 'Да, отправлен' : 'Нет — бэк не узнает вас') + '</div></div>';
         html += '<p class="debug-message">' + escapeHtml(data.message || '') + '</p>';
         html += '<div class="field"><div class="field-label">user_id</div><div class="field-value">' + (data.user_id != null ? data.user_id : '—') + '</div></div>';
         html += '<div class="field"><div class="field-label">Вакансий на бэке</div><div class="field-value">' + (data.vacancies_count != null ? data.vacancies_count : '—') + '</div></div>';
@@ -865,6 +874,7 @@
         if (data.profile && typeof data.profile === 'object') {
           html += '<p class="section-label">Профиль с бэка</p><pre class="debug-json">' + escapeHtml(JSON.stringify(data.profile, null, 2)) + '</pre>';
         }
+        html += '<p class="section-label">Полный ответ сервера (как пришёл)</p><pre class="debug-json">' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
         html += '</div><button type="button" class="btn-back" data-screen="home">Назад</button></div>';
         setContent(html);
       }).catch(function (e) {
@@ -896,6 +906,10 @@
       tg.ready();
       tg.expand();
     }
+    try {
+      var saved = window.localStorage.getItem('hr_token');
+      if (saved && window.HR_API && window.HR_API.setToken) window.HR_API.setToken(saved);
+    } catch (e) {}
     showLoading('Logging in...');
     window.HR_AUTH.ensureAuth()
       .then(function (me) {

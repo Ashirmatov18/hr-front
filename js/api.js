@@ -3,7 +3,10 @@
  */
 (function () {
   function getToken() {
-    return window.HR_TOKEN || null;
+    if (window.HR_TOKEN) return window.HR_TOKEN;
+    try {
+      return window.localStorage.getItem('hr_token');
+    } catch (e) { return null; }
   }
 
   function getBase() {
@@ -104,6 +107,8 @@
     get: function (path) {
       return request('GET', path);
     },
+    getBase: getBase,
+    getToken: getToken,
     post: function (path, body) {
       return request('POST', path, body);
     },
@@ -115,6 +120,10 @@
     },
     setToken: function (token) {
       window.HR_TOKEN = token || null;
+      try {
+        if (token) window.localStorage.setItem('hr_token', token);
+        else window.localStorage.removeItem('hr_token');
+      } catch (e) {}
     },
     getToken: getToken,
     uploadMedia: uploadMedia,
