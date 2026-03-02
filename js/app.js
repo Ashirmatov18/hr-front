@@ -287,11 +287,14 @@
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (v, i) {
         var isClosed = (v.status || '').toLowerCase() === 'closed';
+        var modStatus = (v.moderation_status || '').toLowerCase();
         var statusClass = isClosed ? 'vacancy-status vacancy-status-closed' : 'vacancy-status vacancy-status-open';
         var statusLabel = isClosed ? 'Closed' : 'Open';
-        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + ' <span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span></div>';
+        var modLabel = modStatus === 'pending_review' ? 'Pending review' : (modStatus === 'rejected' ? 'Rejected' : (modStatus === 'published' ? 'Published' : ''));
+        var modClass = modStatus === 'pending_review' ? 'moderation-status moderation-pending' : (modStatus === 'rejected' ? 'moderation-status moderation-rejected' : (modStatus === 'published' ? 'moderation-status moderation-published' : ''));
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + ' <span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span>' + (modLabel ? ' <span class="' + modClass + '">' + escapeHtml(modLabel) + '</span>' : '') + '</div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-view-my-vacancy="' + i + '">View</button>';
-        if (!isClosed) html += '<button type="button" class="btn-sm btn-close-vacancy" data-close-vacancy="' + v.id + '">Close</button>';
+        if (!isClosed && modStatus === 'published') html += '<button type="button" class="btn-sm btn-close-vacancy" data-close-vacancy="' + v.id + '">Close</button>';
         html += '<button type="button" class="btn-sm btn-danger" data-delete-my-vacancy="' + v.id + '">Delete</button></div></li>';
       });
       html += '</ul></div>';
@@ -303,9 +306,18 @@
   function renderVacancyDetail(v, applied, isMine, backScreen) {
     backScreen = backScreen || 'vacancies';
     var isClosed = isMine && ((v.status || '').toLowerCase() === 'closed');
+    var modStatus = isMine ? (v.moderation_status || '').toLowerCase() : '';
+    var canClose = isMine && !isClosed && modStatus === 'published';
     var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + escapeHtml(backScreen) + '">‹</button><h1 class="screen-title">Vacancy</h1></div>';
     html += '<div class="content-card vacancy-detail">';
-    if (isMine && (v.status || '')) html += '<p class="vacancy-status-line"><span class="vacancy-status ' + (isClosed ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(isClosed ? 'Closed' : 'Open') + '</span></p>';
+    if (isMine && (v.status || v.moderation_status)) {
+      html += '<p class="vacancy-status-line">';
+      if (v.status) html += '<span class="vacancy-status ' + (isClosed ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(isClosed ? 'Closed' : 'Open') + '</span> ';
+      if (modStatus === 'pending_review') html += '<span class="moderation-status moderation-pending">Pending review</span>';
+      else if (modStatus === 'rejected') html += '<span class="moderation-status moderation-rejected">Rejected</span>';
+      else if (modStatus === 'published') html += '<span class="moderation-status moderation-published">Published</span>';
+      html += '</p>';
+    }
     if (v.company_name) html += '<p class="vacancy-company">' + escapeHtml(v.company_name) + '</p>';
     html += '<h2 class="vacancy-detail-title">' + escapeHtml(v.title || '') + '</h2>';
     if (v.skills_required) html += '<p class="vacancy-meta"><strong>Skills:</strong> ' + escapeHtml(v.skills_required) + '</p>';
@@ -314,7 +326,7 @@
     html += '<div class="vacancy-content content-body">' + (content ? content : escapeHtml('')) + '</div>';
     html += '</div>';
     if (isMine) {
-      if (!isClosed) html += '<button type="button" class="btn-close-vacancy btn-full" id="vacancy-detail-close-btn" data-vacancy-id="' + (v.id || '') + '">Close vacancy</button>';
+      if (canClose) html += '<button type="button" class="btn-close-vacancy btn-full" id="vacancy-detail-close-btn" data-vacancy-id="' + (v.id || '') + '">Close vacancy</button>';
       html += '<button type="button" class="btn-danger btn-full" id="vacancy-detail-delete-btn" data-vacancy-id="' + (v.id || '') + '">Delete vacancy</button>';
     } else if (applied) {
       html += '<span class="badge-applied badge-inline">You applied</span>';

@@ -693,6 +693,32 @@ body {
   color: var(--hr-text-secondary);
 }
 
+.moderation-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: 6px;
+}
+
+.moderation-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #b45309;
+}
+
+.moderation-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.moderation-published {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
 .btn-close-vacancy {
   background: var(--hr-text-secondary);
   color: #fff;
