@@ -1,27 +1,31 @@
 /* HR Ecosystem Mini App — refreshed design */
 :root {
-  --hr-bg: #f0fdfa;
+  --hr-bg: #f1f5f9;
   --hr-card-bg: #ffffff;
-  --hr-primary: #0d9488;
-  --hr-primary-hover: #0f766e;
-  --hr-accent: #14b8a6;
-  --hr-text: #134e4a;
-  --hr-text-secondary: #64748b;
-  --hr-border: #99f6e4;
+  --hr-primary: #1e40af;
+  --hr-primary-hover: #1e3a8a;
+  --hr-accent: #3b82f6;
+  --hr-text: #0f172a;
+  --hr-text-secondary: #475569;
+  --hr-border: #e2e8f0;
   --hr-radius: 16px;
   --hr-radius-sm: 12px;
-  --hr-shadow: 0 4px 20px rgba(13, 148, 136, 0.06);
-  --hr-shadow-hover: 0 8px 28px rgba(13, 148, 136, 0.1);
+  --hr-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  --hr-shadow-hover: 0 8px 28px rgba(15, 23, 42, 0.1);
   --hr-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --hr-gold: #b45309;
+  --hr-gold-bg: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+  --hr-silver: #4b5563;
+  --hr-silver-bg: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);
 }
 
 /* Telegram theme overrides when inside Telegram */
 body.tg-webapp {
-  --hr-bg: var(--tg-theme-bg-color, #f5f6f8);
+  --hr-bg: var(--tg-theme-bg-color, #f1f5f9);
   --hr-card-bg: var(--tg-theme-secondary-bg-color, #fff);
-  --hr-primary: var(--tg-theme-button-color, #3390ec);
-  --hr-text: var(--tg-theme-text-color, #000);
-  --hr-text-secondary: var(--tg-theme-hint-color, #6d7378);
+  --hr-primary: var(--tg-theme-button-color, #1e40af);
+  --hr-text: var(--tg-theme-text-color, #0f172a);
+  --hr-text-secondary: var(--tg-theme-hint-color, #475569);
 }
 
 * {
@@ -83,7 +87,7 @@ body {
 .debug-message {
   margin: 0 0 16px;
   padding: 12px;
-  background: rgba(13, 148, 136, 0.1);
+  background: rgba(30, 64, 175, 0.08);
   border-radius: 8px;
   font-size: 14px;
 }
@@ -104,7 +108,7 @@ body {
   color: var(--hr-text-secondary);
   margin: 12px 0 0;
   padding: 12px;
-  background: rgba(13, 148, 136, 0.06);
+  background: rgba(30, 64, 175, 0.05);
   border-radius: 8px;
   line-height: 1.5;
 }
@@ -114,7 +118,7 @@ body {
   color: var(--hr-primary);
   margin: 0 0 12px 0;
   padding: 10px 12px;
-  background: rgba(13, 148, 136, 0.08);
+  background: rgba(30, 64, 175, 0.08);
   border-radius: 8px;
   line-height: 1.45;
 }
@@ -162,31 +166,40 @@ body {
 
 /* Home */
 .home .welcome-card {
-  background: linear-gradient(160deg, #ccfbf1 0%, #f0fdfa 45%, var(--hr-card-bg) 100%);
+  background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
-  padding: 28px 24px;
-  margin-bottom: 28px;
+  padding: 24px 22px;
+  margin-bottom: 24px;
   box-shadow: var(--hr-shadow);
   border: 1px solid var(--hr-border);
-  border-top: 4px solid var(--hr-primary);
+  border-left: 4px solid var(--hr-primary);
   animation: hr-fade-in 0.35s ease-out;
 }
 
 .home .welcome-card .greeting {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--hr-primary);
-  margin: 0 0 8px 0;
+  letter-spacing: 0.1em;
+  color: var(--hr-text-secondary);
+  margin: 0 0 6px 0;
   font-weight: 600;
 }
 
 .home .welcome-card .user-name {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 700;
-  margin: 0 0 12px 0;
+  margin: 0 0 14px 0;
   color: var(--hr-text);
   letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-shadow: 0 0 0 transparent;
+}
+
+.home .welcome-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
 }
 
 .home .role-badge {
@@ -196,8 +209,32 @@ body {
   font-size: 12px;
   font-weight: 600;
   text-transform: capitalize;
-  background: rgba(13, 148, 136, 0.12);
+  background: rgba(30, 64, 175, 0.1);
   color: var(--hr-primary);
+}
+
+.home .club-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.club-badge-gold {
+  background: var(--hr-gold-bg);
+  color: var(--hr-gold);
+  border: 1px solid rgba(180, 83, 9, 0.4);
+  box-shadow: 0 1px 3px rgba(180, 83, 9, 0.2);
+}
+
+.club-badge-silver {
+  background: var(--hr-silver-bg);
+  color: var(--hr-silver);
+  border: 1px solid rgba(75, 85, 99, 0.3);
+  box-shadow: 0 1px 3px rgba(75, 85, 99, 0.15);
 }
 
 .home-hint {
@@ -222,8 +259,8 @@ body {
   margin-top: 24px;
   padding: 10px 14px;
   font-size: 11px;
-  color: var(--hr-primary);
-  background: rgba(13, 148, 136, 0.08);
+  color: var(--hr-text-secondary);
+  background: rgba(30, 64, 175, 0.06);
   border-radius: 8px;
   text-align: center;
 }
@@ -460,7 +497,7 @@ body {
 }
 
 .btn-sm.btn-outline:hover {
-  background: rgba(36, 129, 204, 0.08);
+  background: rgba(30, 64, 175, 0.08);
 }
 
 .item-actions {
@@ -598,9 +635,79 @@ body {
   min-width: 0;
 }
 
+.list-matches .list-item-match {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hr-border);
+}
+
+.list-matches .list-item-match:last-child { border-bottom: none; }
+
+.list-item-match .match-status {
+  font-size: 12px;
+  color: var(--hr-text-secondary);
+  margin-left: 6px;
+}
+
+.list-item-match .match-feedback-input {
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--hr-border);
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 52px;
+  color: var(--hr-text);
+  background: var(--hr-card-bg);
+}
+
 .list-item-match .match-actions {
   flex-shrink: 0;
+  margin-top: 4px;
 }
+
+.vacancy-status-line {
+  margin: 0 0 12px 0;
+}
+
+.vacancy-status {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vacancy-status-open {
+  background: rgba(34, 197, 94, 0.15);
+  color: #15803d;
+}
+
+.vacancy-status-closed {
+  background: var(--hr-border);
+  color: var(--hr-text-secondary);
+}
+
+.btn-close-vacancy {
+  background: var(--hr-text-secondary);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--hr-radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.btn-close-vacancy:hover { opacity: 0.9; }
+.btn-close-vacancy:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-sm.btn-close-vacancy { padding: 6px 12px; font-size: 13px; margin-right: 6px; }
 
 .badge-applied {
   font-size: 12px;

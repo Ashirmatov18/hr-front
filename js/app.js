@@ -76,12 +76,17 @@
       var ln = (profile.last_name || '').trim();
       name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
     }
+    var clubLevel = (profile && profile.club_member_level) ? (profile.club_member_level + '').toLowerCase() : '';
+    var clubBadgeClass = clubLevel === 'gold' ? 'club-badge club-badge-gold' : (clubLevel === 'silver' ? 'club-badge club-badge-silver' : '');
+    var clubBadgeText = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
     html += '<p class="greeting">Welcome back</p>';
     html += '<p class="user-name">' + escapeHtml(name) + '</p>';
+    html += '<div class="welcome-badges">';
     html += '<span class="role-badge">' + escapeHtml(mode === 'employer' ? 'Employer' : 'Job seeker') + '</span>';
-    html += '</div>';
+    if (clubBadgeClass && clubBadgeText) html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
+    html += '</div></div>';
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
@@ -136,7 +141,7 @@
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
-    if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="role-badge">' + escapeHtml(clubLabel) + ' member</span></div></div>';
+    if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="club-badge ' + (clubLevel === 'gold' ? 'club-badge-gold' : 'club-badge-silver') + '">' + escapeHtml(clubLabel) + ' member</span></div></div>';
     html += '<div class="field"><div class="field-label">Current mode</div><div class="field-value">' + escapeHtml(mode === 'employer' ? 'Posting vacancies' : 'Looking for job') + '</div></div>';
     html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">LinkedIn</div><div class="field-value">';
@@ -281,9 +286,12 @@
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (v, i) {
-        var sub = (v.company_name ? v.company_name + ' · ' : '') + (v.title || '');
-        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + '</div>';
+        var isClosed = (v.status || '').toLowerCase() === 'closed';
+        var statusClass = isClosed ? 'vacancy-status vacancy-status-closed' : 'vacancy-status vacancy-status-open';
+        var statusLabel = isClosed ? 'Closed' : 'Open';
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + ' <span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span></div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-view-my-vacancy="' + i + '">View</button>';
+        if (!isClosed) html += '<button type="button" class="btn-sm btn-close-vacancy" data-close-vacancy="' + v.id + '">Close</button>';
         html += '<button type="button" class="btn-sm btn-danger" data-delete-my-vacancy="' + v.id + '">Delete</button></div></li>';
       });
       html += '</ul></div>';
@@ -294,8 +302,10 @@
 
   function renderVacancyDetail(v, applied, isMine, backScreen) {
     backScreen = backScreen || 'vacancies';
+    var isClosed = isMine && ((v.status || '').toLowerCase() === 'closed');
     var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + escapeHtml(backScreen) + '">‹</button><h1 class="screen-title">Vacancy</h1></div>';
     html += '<div class="content-card vacancy-detail">';
+    if (isMine && (v.status || '')) html += '<p class="vacancy-status-line"><span class="vacancy-status ' + (isClosed ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(isClosed ? 'Closed' : 'Open') + '</span></p>';
     if (v.company_name) html += '<p class="vacancy-company">' + escapeHtml(v.company_name) + '</p>';
     html += '<h2 class="vacancy-detail-title">' + escapeHtml(v.title || '') + '</h2>';
     if (v.skills_required) html += '<p class="vacancy-meta"><strong>Skills:</strong> ' + escapeHtml(v.skills_required) + '</p>';
@@ -304,6 +314,7 @@
     html += '<div class="vacancy-content content-body">' + (content ? content : escapeHtml('')) + '</div>';
     html += '</div>';
     if (isMine) {
+      if (!isClosed) html += '<button type="button" class="btn-close-vacancy btn-full" id="vacancy-detail-close-btn" data-vacancy-id="' + (v.id || '') + '">Close vacancy</button>';
       html += '<button type="button" class="btn-danger btn-full" id="vacancy-detail-delete-btn" data-vacancy-id="' + (v.id || '') + '">Delete vacancy</button>';
     } else if (applied) {
       html += '<span class="badge-applied badge-inline">You applied</span>';
@@ -320,9 +331,11 @@
     if (!matches || matches.length === 0) {
       html += '<div class="empty-state">No matches yet.</div>';
     } else {
-      html += '<div class="list-card"><ul class="list-items">';
+      html += '<div class="list-card"><ul class="list-items list-matches">';
       matches.forEach(function (m) {
-        html += '<li class="list-item-match"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' — ' + escapeHtml(m.status || '') + '</div>';
+        var comment = (m.feedback_comment || '').trim();
+        html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span></div>';
+        html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
         html += ' <button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button></div></li>';
       });
@@ -676,6 +689,20 @@
         });
       };
     }
+    var detailCloseBtn = document.getElementById('vacancy-detail-close-btn');
+    if (detailCloseBtn) {
+      detailCloseBtn.onclick = function () {
+        var id = this.getAttribute('data-vacancy-id');
+        if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
+        detailCloseBtn.disabled = true;
+        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+          goTo('my-vacancies');
+        }).catch(function (e) {
+          detailCloseBtn.disabled = false;
+          alert(e.message || 'Failed to close');
+        });
+      };
+    }
     var detailDeleteBtn = document.getElementById('vacancy-detail-delete-btn');
     if (detailDeleteBtn) {
       detailDeleteBtn.onclick = function () {
@@ -695,6 +722,20 @@
         var i = parseInt(this.getAttribute('data-view-my-vacancy'), 10);
         var v = lastMyVacanciesList[i];
         if (v) setContent(renderVacancyDetail(v, false, true, 'my-vacancies'));
+      };
+    });
+    el.querySelectorAll('[data-close-vacancy]').forEach(function (btn) {
+      btn.onclick = function () {
+        var id = this.getAttribute('data-close-vacancy');
+        if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
+        var elBtn = this;
+        elBtn.disabled = true;
+        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+          goTo('my-vacancies');
+        }).catch(function (e) {
+          elBtn.disabled = false;
+          alert(e.message || 'Failed to close');
+        });
       };
     });
     el.querySelectorAll('[data-delete-my-vacancy]').forEach(function (btn) {
@@ -757,7 +798,12 @@
         var matchId = this.getAttribute('data-match-id');
         var reaction = this.getAttribute('data-reaction');
         if (!matchId) return;
-        window.HR_API.patch('/matches/' + matchId + '/reaction', { reaction: reaction }).then(function () {
+        var row = document.querySelector('.list-item-match[data-match-id="' + matchId + '"]');
+        var feedbackEl = row ? row.querySelector('.match-feedback-input') : null;
+        var feedbackComment = (feedbackEl && feedbackEl.value) ? feedbackEl.value.trim() : '';
+        var body = { reaction: reaction };
+        if (feedbackComment) body.feedback_comment = feedbackComment;
+        window.HR_API.patch('/matches/' + matchId + '/reaction', body).then(function () {
           goTo('matches');
         }).catch(function (e) {
           alert(e.message || 'Failed');
