@@ -83,22 +83,32 @@
     html += '<span class="role-badge">' + escapeHtml(mode === 'employer' ? 'Employer' : 'Job seeker') + '</span>';
     html += '</div>';
     html += '<div class="nav-cards">';
-    if (mode === 'candidate') {
-      html += '<button type="button" class="nav-card" data-screen="vacancies"><span>Vacancies</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="resume"><span>My resume</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="applications"><span>My applications</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
-    } else {
-      html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="all-candidates"><span>All candidates</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Pending my approval</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
-    }
-    html += '<p class="section-label">Account</p>';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
+    html += '<p class="section-label">Account</p>';
     html += '<button type="button" class="nav-card" data-screen="debug"><span>Диагностика бэкенда</span><span class="arrow">›</span></button>';
     html += '<p class="app-build">HR Ecosystem · Build 2024.02.24</p>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderClubServices() {
+    var mode = getAppMode();
+    var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
+    var html = '<div class="screen club-services">';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
+    html += '<div class="nav-cards">';
+    html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="applications"><span>My applications</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
+    if (isEmployer) {
+      html += '<p class="section-label">Employer</p>';
+      html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
+    }
     html += '</div></div>';
     return html;
   }
@@ -152,7 +162,7 @@
     items = ensureArray(items);
     itemLabel = itemLabel || function (x) { return x.title || x.vacancy_title || x.id; };
     var html = '<div class="screen list">';
-    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">' + escapeHtml(title) + '</h1></div>';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">' + escapeHtml(title) + '</h1></div>';
     if (!items || items.length === 0) {
       html += '<div class="empty-state">No items yet.</div>';
     } else {
@@ -162,7 +172,7 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
@@ -171,7 +181,7 @@
     var firstName = r.first_name || (profile && profile.first_name) || '';
     var lastName = r.last_name || (profile && profile.last_name) || '';
     var fullName = (firstName + ' ' + lastName).trim() || '—';
-    var html = '<div class="screen" id="resume-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My resume</h1></div>';
+    var html = '<div class="screen" id="resume-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My resume</h1></div>';
     html += '<div class="content-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(fullName) + '</div></div>';
     html += '<div class="field"><div class="field-label">Title</div><div class="field-value">' + escapeHtml(r.title || '—') + '</div></div>';
@@ -180,13 +190,13 @@
     html += '</div>';
     html += '<button type="button" class="btn-primary" id="resume-edit-btn">Edit resume</button>';
     html += ' <button type="button" class="btn-danger" id="resume-delete-btn">Delete resume</button>';
-    html += ' <button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += ' <button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
   function renderResumeForm(r) {
     r = r || {};
-    var backScreen = r.id ? 'resume' : 'home';
+    var backScreen = r.id ? 'resume' : 'club-services';
     var html = '<div class="screen" id="resume-form-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + backScreen + '">‹</button><h1 class="screen-title">' + (r.id ? 'Edit resume' : 'Create resume') + '</h1></div>';
     html += '<div class="form-card">';
     html += '<label class="field-label">First name</label><input type="text" id="resume-first-name" value="' + escapeHtml(r.first_name || (profile && profile.first_name) || '') + '" placeholder="First name" />';
@@ -203,7 +213,7 @@
   function renderVacanciesWithRespond(vacancies, appliedIds) {
     vacancies = ensureArray(vacancies);
     appliedIds = appliedIds || {};
-    var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Vacancies</h1></div>';
+    var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Vacancies</h1></div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
       html += '<p class="vacancies-hint">Если вы создали вакансию в админке WordPress — привяжите её к категории <strong>Public</strong> или включите <strong>Club badge</strong> в профиле пользователя.</p>';
@@ -222,13 +232,13 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
   function renderMyVacanciesList(list) {
     list = ensureArray(list);
-    var html = '<div class="screen" id="my-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My vacancies</h1></div>';
+    var html = '<div class="screen" id="my-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My vacancies</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
     } else {
@@ -241,7 +251,7 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
@@ -269,7 +279,7 @@
 
   function renderMatchesWithReaction(matches) {
     matches = ensureArray(matches);
-    var html = '<div class="screen" id="matches-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My matches</h1></div>';
+    var html = '<div class="screen" id="matches-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My matches</h1></div>';
     if (!matches || matches.length === 0) {
       html += '<div class="empty-state">No matches yet.</div>';
     } else {
@@ -281,13 +291,13 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
   function renderOpenedResumesList(list) {
     list = ensureArray(list);
-    var html = '<div class="screen" id="opened-resumes-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Opened resumes</h1></div>';
+    var html = '<div class="screen" id="opened-resumes-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Opened resumes</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No opened resumes yet.</div>';
     } else {
@@ -299,13 +309,13 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
   function renderPendingApprovalList(list) {
     list = ensureArray(list);
-    var html = '<div class="screen" id="pending-approval-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Pending my approval</h1></div>';
+    var html = '<div class="screen" id="pending-approval-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Candidates</h1></div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No matches waiting for your approval.</div>';
     } else {
@@ -319,7 +329,7 @@
       });
       html += '</ul></div>';
     }
-    html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
     return html;
   }
 
@@ -414,7 +424,7 @@
   }
 
   function renderCreateVacancyForm() {
-    var html = '<div class="screen" id="create-vacancy-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Create vacancy</h1></div>';
+    var html = '<div class="screen" id="create-vacancy-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Create vacancy</h1></div>';
     html += '<div class="form-card"><label class="field-label">Company name</label><input type="text" id="vacancy-company" placeholder="Your company or brand" />';
     html += '<label class="field-label">Job title (who you are looking for) *</label><input type="text" id="vacancy-title" placeholder="e.g. Frontend Developer" />';
     html += '<label class="field-label">Description</label><textarea id="vacancy-content" rows="5" placeholder="Requirements, responsibilities..."></textarea>';
@@ -440,7 +450,7 @@
           var m = this.getAttribute('data-mode');
           if (m) {
             setAppMode(m);
-            goTo(m === 'candidate' ? 'resume' : 'create-vacancy');
+            goTo('home');
           }
         });
       });
@@ -760,6 +770,15 @@
       });
       return;
     }
+    if (screen === 'club-services') {
+      window.HR_API.get('/me').then(function (me) {
+        profile = me;
+        setContent(renderClubServices());
+      }).catch(function () {
+        setContent(renderClubServices());
+      });
+      return;
+    }
     if (screen === 'vacancies') {
       Promise.all([ window.HR_API.get('/vacancies'), window.HR_API.get('/applications/me') ]).then(function (arr) {
         var list = ensureArray(arr && arr[0] !== undefined ? arr[0] : []);
@@ -797,10 +816,10 @@
         }
       }).catch(function (e) {
         var msg = (e.message || 'Не удалось загрузить резюме.') + ' Проверьте интернет и попробуйте снова.';
-        var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">My resume</h1></div>';
+        var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My resume</h1></div>';
         html += '<div class="error">' + escapeHtml(msg) + '</div>';
         html += '<button type="button" class="btn-back" data-screen="resume">Повторить</button>';
-        html += ' <button type="button" class="btn-back" data-screen="home">На главную</button></div>';
+        html += ' <button type="button" class="btn-back" data-screen="club-services">На главную</button></div>';
         setContent(html);
       });
       return;
