@@ -127,21 +127,58 @@
     if (nameEmpty) name = 'Имя не указано';
     var mode = getAppMode();
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (p.role === 'candidate' ? 'Candidate' : (p.role || '—'))));
+    var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
+    var clubLevel = (p.club_member_level || '').toLowerCase();
+    var clubLabel = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
+    if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="role-badge">' + escapeHtml(clubLabel) + ' member</span></div></div>';
     html += '<div class="field"><div class="field-label">Current mode</div><div class="field-value">' + escapeHtml(mode === 'employer' ? 'Posting vacancies' : 'Looking for job') + '</div></div>';
     html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">LinkedIn</div><div class="field-value">';
+    if (p.linkedin_url) html += '<a href="' + escapeHtml(p.linkedin_url) + '" target="_blank" rel="noopener">' + escapeHtml(p.linkedin_url) + '</a>';
+    else html += escapeHtml(linkedinDisplay);
+    html += '</div></div>';
     html += '<div class="field"><div class="field-label">Skills</div><div class="field-value">' + escapeHtml(p.hr_skills || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">Tags</div><div class="field-value">' + escapeHtml(p.hr_tags || '—') + '</div></div>';
     html += '</div>';
+    html += '<p class="section-label">Edit</p>';
+    html += '<button type="button" class="nav-card" data-screen="profile-edit"><span>Edit LinkedIn</span><span class="arrow">›</span></button>';
     html += '<p class="section-label">Switch mode</p>';
     html += '<button type="button" class="nav-card" id="profile-mode-candidate">Looking for a job</button>';
     html += '<button type="button" class="nav-card" id="profile-mode-employer">Posting vacancies</button>';
     html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
+    return html;
+  }
+
+  function renderOfferScreen() {
+    var text = (profile && profile.offer_text) ? profile.offer_text : '';
+    var html = '<div class="screen offer">';
+    html += '<div class="screen-header"><h1 class="screen-title">User agreement</h1></div>';
+    html += '<div class="profile-card offer-text">';
+    html += '<div class="content-body">' + (text ? escapeHtml(text).replace(/\n/g, '<br>') : 'Please accept the terms to continue.') + '</div>';
+    html += '</div>';
+    html += '<label class="checkbox-label"><input type="checkbox" id="offer-accept-cb" /> I accept the terms</label>';
+    html += '<button type="button" class="btn-primary btn-full" id="offer-accept-btn" disabled>Accept and continue</button>';
+    html += '</div>';
+    return html;
+  }
+
+  function renderProfileEdit() {
+    var p = profile || {};
+    var html = '<div class="screen profile-edit">';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="profile">‹</button><h1 class="screen-title">Edit profile</h1></div>';
+    html += '<div class="form-card">';
+    html += '<label class="field-label">LinkedIn profile URL</label>';
+    html += '<input type="url" id="profile-linkedin-url" value="' + escapeHtml(p.linkedin_url || '') + '" placeholder="https://linkedin.com/in/..." />';
+    html += '<label class="checkbox-label" style="margin-top:10px;"><input type="checkbox" id="profile-linkedin-skip" ' + (p.linkedin_skipped ? 'checked' : '') + ' /> I don\'t have LinkedIn</label>';
+    html += '<p class="hint">You can leave the field empty or check the box if you don\'t use LinkedIn (e.g. due to regional restrictions).</p>';
+    html += '<button type="button" class="btn-primary" id="profile-save-btn">Save</button>';
+    html += '</div></div>';
     return html;
   }
 
@@ -452,6 +489,48 @@
             setAppMode(m);
             goTo('home');
           }
+        });
+      });
+    }
+    var offerCb = document.getElementById('offer-accept-cb');
+    var offerBtn = document.getElementById('offer-accept-btn');
+    if (offerCb && offerBtn) {
+      offerCb.addEventListener('change', function () { offerBtn.disabled = !offerCb.checked; });
+      offerBtn.disabled = !offerCb.checked;
+      offerBtn.addEventListener('click', function () {
+        if (!offerCb.checked) return;
+        offerBtn.disabled = true;
+        window.HR_API.post('/me', { offer_accepted: true }).then(function () {
+          return window.HR_API.get('/me');
+        }).then(function (me) {
+          profile = me;
+          goTo('home');
+        }).catch(function (e) {
+          offerBtn.disabled = false;
+          alert(e.message || 'Failed to save');
+        });
+      });
+    }
+    var profileSaveBtn = document.getElementById('profile-save-btn');
+    if (profileSaveBtn) {
+      profileSaveBtn.addEventListener('click', function () {
+        var urlEl = document.getElementById('profile-linkedin-url');
+        var skipEl = document.getElementById('profile-linkedin-skip');
+        var url = (urlEl && urlEl.value) ? urlEl.value.trim() : '';
+        var skipped = skipEl && skipEl.checked;
+        if (!skipped && !url) {
+          alert('Enter LinkedIn URL or check "I don\'t have LinkedIn".');
+          return;
+        }
+        profileSaveBtn.disabled = true;
+        window.HR_API.post('/me', { linkedin_url: skipped ? '' : url, linkedin_skipped: skipped }).then(function () {
+          return window.HR_API.get('/me');
+        }).then(function (me) {
+          profile = me;
+          setContent(renderProfile());
+        }).catch(function (e) {
+          profileSaveBtn.disabled = false;
+          alert(e.message || 'Failed to save');
         });
       });
     }
@@ -770,6 +849,10 @@
       });
       return;
     }
+    if (screen === 'profile-edit') {
+      setContent(renderProfileEdit());
+      return;
+    }
     if (screen === 'club-services') {
       window.HR_API.get('/me').then(function (me) {
         profile = me;
@@ -933,6 +1016,10 @@
     window.HR_AUTH.ensureAuth()
       .then(function (me) {
         profile = me || profile;
+        if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
+          setContent(renderOfferScreen());
+          return;
+        }
         goTo('home');
       })
       .catch(function (e) {
@@ -952,6 +1039,10 @@
               showLoading('Checking token...');
               window.HR_API.get('/me').then(function (me) {
                 profile = me;
+                if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
+                  setContent(renderOfferScreen());
+                  return;
+                }
                 goTo('home');
               }).catch(function () {
                 window.HR_API.setToken(null);
