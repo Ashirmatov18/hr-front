@@ -103,16 +103,18 @@
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
     html += '<div class="nav-cards">';
-    html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="applications"><span>My applications</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
     if (isEmployer) {
       html += '<p class="section-label">Employer</p>';
       html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
+    } else {
+      html += '<p class="section-label">Job seeker</p>';
+      html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="applications"><span>My applications</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
     }
     html += '</div></div>';
     return html;
@@ -780,12 +782,17 @@
       btn.onclick = function () {
         var id = this.getAttribute('data-pending-approve');
         if (!id) return;
-        this.disabled = true;
+        var that = this;
+        that.disabled = true;
         window.HR_API.patch('/matches/' + id, { status: 'confirmed' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
-          btn.disabled = false;
-          alert(e.message || 'Failed');
+          that.disabled = false;
+          var msg = (e.status ? 'Ошибка ' + e.status + ': ' : '') + (e.data && e.data.message ? e.data.message : (e.message || 'Failed'));
+          if (e.message === 'Failed to fetch' || (e.message && e.message.indexOf('fetch') !== -1)) {
+            msg = 'Не удалось связаться с сервером. Проверьте: 1) В config.js указан API_BASE_URL, доступный с телефона (например, https или ngrok). 2) Сервер запущен, ngrok туннель активен.';
+          }
+          alert(msg);
         });
       };
     });
@@ -793,12 +800,17 @@
       btn.onclick = function () {
         var id = this.getAttribute('data-pending-reject');
         if (!id || !confirm('Reject this match?')) return;
-        this.disabled = true;
+        var that = this;
+        that.disabled = true;
         window.HR_API.patch('/matches/' + id, { status: 'rejected' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
-          btn.disabled = false;
-          alert(e.message || 'Failed');
+          that.disabled = false;
+          var msg = (e.status ? 'Ошибка ' + e.status + ': ' : '') + (e.data && e.data.message ? e.data.message : (e.message || 'Failed'));
+          if (e.message === 'Failed to fetch' || (e.message && e.message.indexOf('fetch') !== -1)) {
+            msg = 'Не удалось связаться с сервером. Проверьте: 1) В config.js указан API_BASE_URL, доступный с телефона (например, https или ngrok). 2) Сервер запущен, ngrok туннель активен.';
+          }
+          alert(msg);
         });
       };
     });
