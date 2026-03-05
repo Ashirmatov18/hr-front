@@ -722,17 +722,34 @@
       };
     });
 
+    function checkResumeAndRespond(vacancyId, btn, onSuccess) {
+      window.HR_API.get('/resumes/me').then(function (r) {
+        var resume = (r && r.resume !== undefined) ? r.resume : r;
+        var hasResume = resume && (resume.id || (resume.title && resume.title.trim()) || (resume.content && resume.content.trim()));
+        if (!hasResume) {
+          alert('Please fill in your resume first. Go to Club services → Place candidacy.');
+          if (btn) btn.disabled = false;
+          return;
+        }
+        if (btn) btn.disabled = true;
+        window.HR_API.post('/vacancies/' + vacancyId + '/respond', {}).then(function () {
+          if (onSuccess) onSuccess();
+          goTo('vacancies');
+        }).catch(function (e) {
+          if (btn) btn.disabled = false;
+          alert(e.message || 'Failed');
+        });
+      }).catch(function (e) {
+        if (btn) btn.disabled = false;
+        alert(e.message || 'Could not check resume.');
+      });
+    }
+
     el.querySelectorAll('[data-respond-vacancy]').forEach(function (btn) {
       btn.onclick = function () {
         var id = this.getAttribute('data-respond-vacancy');
         if (!id) return;
-        this.disabled = true;
-        window.HR_API.post('/vacancies/' + id + '/respond', {}).then(function () {
-          goTo('vacancies');
-        }).catch(function (e) {
-          btn.disabled = false;
-          alert(e.message || 'Failed');
-        });
+        checkResumeAndRespond(id, this);
       };
     });
 
@@ -741,14 +758,7 @@
       detailRespondBtn.onclick = function () {
         var id = this.getAttribute('data-vacancy-id');
         if (!id) return;
-        this.disabled = true;
-        window.HR_API.post('/vacancies/' + id + '/respond', {}).then(function () {
-          lastVacanciesAppliedIds[id] = true;
-          goTo('vacancies');
-        }).catch(function (e) {
-          detailRespondBtn.disabled = false;
-          alert(e.message || 'Failed');
-        });
+        checkResumeAndRespond(id, this, function () { lastVacanciesAppliedIds[id] = true; });
       };
     }
     var detailCloseBtn = document.getElementById('vacancy-detail-close-btn');
