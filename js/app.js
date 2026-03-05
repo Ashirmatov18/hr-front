@@ -866,7 +866,7 @@
         var feedbackComment = (feedbackEl && feedbackEl.value) ? feedbackEl.value.trim() : '';
         var body = { reaction: reaction };
         if (feedbackComment) body.feedback_comment = feedbackComment;
-        window.HR_API.patch('/matches/' + matchId + '/reaction', body).then(function () {
+        window.HR_API.post('/matches/' + matchId + '/reaction', body).then(function () {
           goTo('matches');
         }).catch(function (e) {
           alert(e.message || 'Failed');
