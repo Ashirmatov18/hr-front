@@ -38,44 +38,19 @@
   }
 
   function getAppMode() {
-    try {
-      return localStorage.getItem('hr_app_mode') || '';
-    } catch (e) { return ''; }
-  }
-  function setAppMode(mode) {
-    try { localStorage.setItem('hr_app_mode', mode); } catch (e) {}
-  }
-
-  function renderModeChoice() {
-    var html = '<div class="screen screen-mode-choice">';
-    html += '<h1 class="screen-title mode-choice-title">What do you want to do?</h1>';
-    html += '<p class="mode-choice-hint">Choose one option. You can change it later in Profile.</p>';
-    html += '<div class="mode-choice-cards">';
-    html += '<button type="button" class="mode-choice-card" data-mode="candidate">';
-    html += '<span class="mode-choice-icon">👤</span>';
-    html += '<span class="mode-choice-label">I\'m looking for a job</span>';
-    html += '<span class="mode-choice-desc">Vacancies, my resume, applications, matches</span>';
-    html += '</button>';
-    html += '<button type="button" class="mode-choice-card" data-mode="employer">';
-    html += '<span class="mode-choice-icon">🏢</span>';
-    html += '<span class="mode-choice-label">I want to post a vacancy</span>';
-    html += '<span class="mode-choice-desc">My vacancies, create vacancy, opened resumes</span>';
-    html += '</button>';
-    html += '</div></div>';
-    return html;
+    if (profile && (profile.role === 'employer' || profile.role === 'admin')) return 'employer';
+    return 'candidate';
   }
 
   function renderHome() {
-    var mode = getAppMode();
-    if (!mode) {
-      return renderModeChoice();
-    }
     var name = 'User';
     if (profile) {
       var fn = (profile.first_name || '').trim();
       var ln = (profile.last_name || '').trim();
       name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
     }
+    var role = (profile && profile.role) || 'candidate';
+    var roleLabel = role === 'employer' ? 'Employer' : (role === 'admin' ? 'Admin' : 'Job seeker');
     var clubLevel = (profile && profile.club_member_level) ? (profile.club_member_level + '').toLowerCase() : '';
     var clubBadgeClass = clubLevel === 'gold' ? 'club-badge club-badge-gold' : (clubLevel === 'silver' ? 'club-badge club-badge-silver' : '');
     var clubBadgeText = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
@@ -84,10 +59,10 @@
     html += '<p class="greeting">Welcome back</p>';
     html += '<p class="user-name">' + escapeHtml(name) + '</p>';
     html += '<div class="welcome-badges">';
-    html += '<span class="role-badge">' + escapeHtml(mode === 'employer' ? 'Employer' : 'Job seeker') + '</span>';
+    html += '<span class="role-badge">' + escapeHtml(roleLabel) + '</span>';
     if (clubBadgeClass && clubBadgeText) html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
     html += '</div>';
-    if (mode === 'employer' && profile && profile.employer_type) {
+    if ((role === 'employer' || role === 'admin') && profile && profile.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
       var etLabel = employerTypeLabels[profile.employer_type] || profile.employer_type;
       html += '<p class="welcome-company-type">Company type: ' + escapeHtml(etLabel) + '</p>';
@@ -104,7 +79,6 @@
   }
 
   function renderClubServices(stats) {
-    var mode = getAppMode();
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
@@ -142,7 +116,6 @@
     var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || (p.display_name || '').trim() || p.user_login || '—';
     var nameEmpty = !name || name === '—';
     if (nameEmpty) name = 'Имя не указано';
-    var mode = getAppMode();
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (p.role === 'candidate' ? 'Candidate' : (p.role || '—'))));
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
     var clubLevel = (p.club_member_level || '').toLowerCase();
@@ -152,14 +125,13 @@
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
-    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
+    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + ' <span class="profile-hint">(set in WordPress admin)</span></div></div>';
     if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="club-badge ' + (clubLevel === 'gold' ? 'club-badge-gold' : 'club-badge-silver') + '">' + escapeHtml(clubLabel) + ' member</span></div></div>';
     if (p.role === 'employer' && p.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
       var employerTypeLabel = employerTypeLabels[p.employer_type] || p.employer_type;
       html += '<div class="field"><div class="field-label">Employer type</div><div class="field-value">' + escapeHtml(employerTypeLabel) + '</div></div>';
     }
-    html += '<div class="field"><div class="field-label">Current mode</div><div class="field-value">' + escapeHtml(mode === 'employer' ? 'Posting vacancies' : 'Looking for job') + '</div></div>';
     html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">LinkedIn</div><div class="field-value">';
     if (p.linkedin_url) html += '<a href="' + escapeHtml(p.linkedin_url) + '" target="_blank" rel="noopener">' + escapeHtml(p.linkedin_url) + '</a>';
@@ -170,9 +142,6 @@
     html += '</div>';
     html += '<p class="section-label">Edit</p>';
     html += '<button type="button" class="nav-card" data-screen="profile-edit"><span>Edit LinkedIn</span><span class="arrow">›</span></button>';
-    html += '<p class="section-label">Switch mode</p>';
-    html += '<button type="button" class="nav-card" id="profile-mode-candidate">Looking for a job</button>';
-    html += '<button type="button" class="nav-card" id="profile-mode-employer">Posting vacancies</button>';
     html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
     return html;
   }
@@ -187,6 +156,20 @@
     html += '<label class="checkbox-label"><input type="checkbox" id="offer-accept-cb" /> I accept the terms</label>';
     html += '<button type="button" class="btn-primary btn-full" id="offer-accept-btn" disabled>Accept and continue</button>';
     html += '</div>';
+    return html;
+  }
+
+  function renderLinkedInStepScreen() {
+    var p = profile || {};
+    var html = '<div class="screen" id="linkedin-step-screen">';
+    html += '<div class="screen-header"><h1 class="screen-title">LinkedIn profile</h1></div>';
+    html += '<div class="form-card">';
+    html += '<p class="hint">Add your LinkedIn profile link, or skip if you don\'t use it.</p>';
+    html += '<label class="field-label">LinkedIn profile URL</label>';
+    html += '<input type="url" id="linkedin-step-url" value="' + escapeHtml(p.linkedin_url || '') + '" placeholder="https://linkedin.com/in/..." />';
+    html += '<label class="checkbox-label" style="margin-top:10px;"><input type="checkbox" id="linkedin-step-skip" ' + (p.linkedin_skipped ? 'checked' : '') + ' /> I don\'t have LinkedIn</label>';
+    html += '<button type="button" class="btn-primary btn-full" id="linkedin-step-continue">Continue</button>';
+    html += '</div></div>';
     return html;
   }
 
@@ -368,7 +351,7 @@
         html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
         html += '<button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
-        html += '<button type="button" class="btn-sm btn-primary btn-chat" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches">Chat</button></div></li>';
+        html += '<button type="button" class="btn-sm btn-primary btn-chat" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches" data-chat-match-status="' + escapeHtml(m.status || '') + '">Chat</button></div></li>';
       });
       html += '</ul></div>';
     }
@@ -384,11 +367,12 @@
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (x, i) {
-        var label = (x.vacancy_company_name ? x.vacancy_company_name + ' · ' : '') + (x.vacancy_title || '') + ' — ' + (x.candidate_name || '');
+        var statusBadge = (x.match_status === 'offer_made' ? ' · Offer made' : '') + (x.match_status === 'dialog_closed' ? ' · Closed' : '');
+        var label = (x.vacancy_company_name ? x.vacancy_company_name + ' · ' : '') + (x.vacancy_title || '') + ' — ' + (x.candidate_name || '') + statusBadge;
         var chatTitle = (x.vacancy_title || '') + (x.candidate_name ? ' · ' + x.candidate_name : '');
         html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(label) + '</div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-primary" data-opened-index="' + i + '">View</button>';
-        html += '<button type="button" class="btn-sm btn-outline" data-open-chat="' + x.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes">Chat</button></div></li>';
+        html += '<button type="button" class="btn-sm btn-outline" data-open-chat="' + x.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(x.match_status || '') + '">Chat</button></div></li>';
       });
       html += '</ul></div>';
     }
@@ -462,13 +446,16 @@
       html += '<p class="empty-state">No resume or profile data yet.</p>';
     }
     var chatTitle = vacancyTitle + (candidateName ? ' · ' + candidateName : '');
-    html += '</div><button type="button" class="btn-sm btn-primary" data-open-chat="' + item.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes">Open chat</button>';
+    html += '</div><button type="button" class="btn-sm btn-primary" data-open-chat="' + item.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(item.match_status || '') + '">Open chat</button>';
     html += '<button type="button" class="btn-back" data-screen="opened-resumes">Back to list</button></div>';
     return html;
   }
 
-  function renderChatScreen(matchId, title, messages) {
+  function renderChatScreen(matchId, title, messages, isEmployer, matchStatus) {
     messages = ensureArray(messages);
+    isEmployer = !!isEmployer;
+    matchStatus = matchStatus || '';
+    var isClosed = matchStatus === 'dialog_closed';
     var html = '<div class="screen chat-screen" id="chat-screen"><div class="screen-header">';
     html += '<button type="button" class="back-btn" id="chat-back-btn">‹</button>';
     html += '<h1 class="screen-title chat-title">' + escapeHtml(title || 'Chat') + '</h1></div>';
@@ -480,8 +467,18 @@
       html += '<div class="chat-msg-meta">' + (msg.is_mine ? '' : escapeHtml(msg.sender_name || '') + ' · ') + escapeHtml(time) + '</div></div>';
     });
     html += '</div>';
-    html += '<div class="chat-input-wrap"><textarea id="chat-input" class="chat-input" placeholder="Message..." rows="2"></textarea>';
-    html += '<button type="button" class="btn-sm btn-primary" id="chat-send-btn">Send</button></div></div>';
+    if (isClosed) {
+      html += '<div class="chat-closed-notice">Dialog closed</div>';
+    } else {
+      html += '<div class="chat-input-wrap"><textarea id="chat-input" class="chat-input" placeholder="Message..." rows="2"></textarea>';
+      html += '<button type="button" class="btn-sm btn-primary" id="chat-send-btn">Send</button></div>';
+      if (isEmployer) {
+        html += '<div class="chat-employer-actions">';
+        if (matchStatus !== 'offer_made') html += '<button type="button" class="btn-sm btn-outline" id="chat-offer-btn">Make offer</button>';
+        html += '<button type="button" class="btn-sm btn-outline" id="chat-close-dialog-btn">Close dialog</button></div>';
+      }
+    }
+    html += '</div>';
     return html;
   }
 
@@ -548,15 +545,7 @@
       });
     });
     if (el) {
-      el.querySelectorAll('.mode-choice-card').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var m = this.getAttribute('data-mode');
-          if (m) {
-            setAppMode(m);
-            goTo('home');
-          }
-        });
-      });
+      // no mode choice — role is set in WordPress admin
     }
     var offerCb = document.getElementById('offer-accept-cb');
     var offerBtn = document.getElementById('offer-accept-btn');
@@ -570,7 +559,30 @@
           return window.HR_API.get('/me');
         }).then(function (me) {
           profile = me;
-          goTo('home');
+          setContent(renderLinkedInStepScreen());
+          var continueBtn = document.getElementById('linkedin-step-continue');
+          if (continueBtn) {
+            continueBtn.onclick = function () {
+              var urlEl = document.getElementById('linkedin-step-url');
+              var skipEl = document.getElementById('linkedin-step-skip');
+              var url = (urlEl && urlEl.value) ? urlEl.value.trim() : '';
+              var skipped = skipEl && skipEl.checked;
+              if (!skipped && !url) {
+                alert('Enter LinkedIn URL or check "I don\'t have LinkedIn".');
+                return;
+              }
+              continueBtn.disabled = true;
+              window.HR_API.post('/me', { linkedin_url: skipped ? '' : url, linkedin_skipped: skipped }).then(function () {
+                return window.HR_API.get('/me');
+              }).then(function (me) {
+                profile = me;
+                goTo('home');
+              }).catch(function (e) {
+                continueBtn.disabled = false;
+                alert(e.message || 'Failed to save');
+              });
+            };
+          }
         }).catch(function (e) {
           offerBtn.disabled = false;
           alert(e.message || 'Failed to save');
@@ -600,10 +612,7 @@
         });
       });
     }
-    var pmCandidate = document.getElementById('profile-mode-candidate');
-    if (pmCandidate) pmCandidate.onclick = function () { setAppMode('candidate'); goTo('home'); };
-    var pmEmployer = document.getElementById('profile-mode-employer');
-    if (pmEmployer) pmEmployer.onclick = function () { setAppMode('employer'); goTo('home'); };
+    // Role is set in WordPress admin — no "Switch mode" buttons
     bindCustomActions();
   }
 
@@ -886,10 +895,14 @@
         var matchId = this.getAttribute('data-open-chat');
         var title = this.getAttribute('data-chat-title') || '';
         var back = this.getAttribute('data-chat-back') || 'club-services';
+        var isEmployer = this.getAttribute('data-chat-is-employer') === '1';
+        var matchStatus = this.getAttribute('data-chat-match-status') || '';
         if (!matchId) return;
         window.HR_CHAT_MATCH_ID = matchId;
         window.HR_CHAT_TITLE = title;
         window.HR_CHAT_BACK = back;
+        window.HR_CHAT_IS_EMPLOYER = isEmployer;
+        window.HR_CHAT_MATCH_STATUS = matchStatus;
         goTo('chat');
       };
     });
@@ -1073,9 +1086,11 @@
         goTo(backScreen);
         return;
       }
+      var isEmployer = !!window.HR_CHAT_IS_EMPLOYER;
+      var matchStatus = window.HR_CHAT_MATCH_STATUS || '';
       window.HR_API.get('/matches/' + matchId + '/messages').then(function (raw) {
         var list = ensureArray(raw);
-        setContent(renderChatScreen(matchId, title, list));
+        setContent(renderChatScreen(matchId, title, list, isEmployer, matchStatus));
         var backBtn = document.getElementById('chat-back-btn');
         if (backBtn) backBtn.onclick = function () { goTo(backScreen); };
         var sendBtn = document.getElementById('chat-send-btn');
@@ -1091,6 +1106,31 @@
             }).catch(function (e) {
               sendBtn.disabled = false;
               alert(e.message || 'Failed to send');
+            });
+          };
+        }
+        var offerBtn = document.getElementById('chat-offer-btn');
+        if (offerBtn) {
+          offerBtn.onclick = function () {
+            offerBtn.disabled = true;
+            window.HR_API.post('/matches/' + matchId + '/employer-action', { action: 'offer_made' }).then(function () {
+              window.HR_CHAT_MATCH_STATUS = 'offer_made';
+              goTo('chat');
+            }).catch(function (e) {
+              offerBtn.disabled = false;
+              alert(e.message || 'Failed');
+            });
+          };
+        }
+        var closeBtn = document.getElementById('chat-close-dialog-btn');
+        if (closeBtn) {
+          closeBtn.onclick = function () {
+            closeBtn.disabled = true;
+            window.HR_API.post('/matches/' + matchId + '/employer-action', { action: 'dialog_closed' }).then(function () {
+              goTo(backScreen);
+            }).catch(function (e) {
+              closeBtn.disabled = false;
+              alert(e.message || 'Failed');
             });
           };
         }

@@ -1082,3 +1082,24 @@ body {
   flex-shrink: 0;
   padding: 10px 18px;
 }
+
+.chat-closed-notice {
+  padding: 14px 16px;
+  text-align: center;
+  color: var(--hr-text-secondary);
+  font-size: 14px;
+  border-top: 1px solid var(--hr-border);
+  background: var(--hr-bg);
+}
+
+.chat-employer-actions {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--hr-border);
+  background: var(--hr-bg);
+}
+
+.chat-employer-actions .btn-sm {
+  flex: 1;
+}
