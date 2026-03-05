@@ -640,7 +640,9 @@ body {
 .btn-reaction {
   background: var(--hr-border);
   color: var(--hr-text);
-  margin-right: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .btn-reaction.active {
@@ -693,8 +695,24 @@ body {
 }
 
 .list-item-match .match-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.list-item-match .match-actions .btn-sm {
+  white-space: nowrap;
   flex-shrink: 0;
-  margin-top: 4px;
+}
+
+.list-item-match .match-actions .btn-reaction {
+  min-width: 0;
+}
+
+.list-item-match .match-actions .btn-chat {
+  margin-left: 0;
 }
 
 .list-item-with-action .item-actions {
@@ -974,6 +992,7 @@ body {
   flex-direction: column;
   height: 100%;
   min-height: 0;
+  padding-bottom: 0;
 }
 
 .chat-screen .screen-header {
@@ -984,71 +1003,82 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 70vw;
+  max-width: 60vw;
+  font-size: 1rem;
 }
 
 .chat-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-height: 120px;
+  min-height: 100px;
 }
 
 .chat-msg {
   max-width: 85%;
+  min-width: 0;
   align-self: flex-start;
   padding: 10px 14px;
   border-radius: 14px 14px 14px 4px;
   background: var(--hr-card-bg);
   border: 1px solid var(--hr-border);
+  box-sizing: border-box;
 }
 
 .chat-msg.mine {
   align-self: flex-end;
   border-radius: 14px 14px 4px 14px;
-  background: rgba(30, 64, 175, 0.12);
+  background: rgba(30, 64, 175, 0.15);
   border-color: var(--hr-primary);
 }
 
 .chat-msg-text {
   font-size: 15px;
-  line-height: 1.4;
+  line-height: 1.45;
   color: var(--hr-text);
   word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .chat-msg-meta {
   font-size: 11px;
   color: var(--hr-text-secondary);
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .chat-input-wrap {
   flex-shrink: 0;
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: flex-end;
   padding: 12px 16px;
   border-top: 1px solid var(--hr-border);
   background: var(--hr-bg);
+  min-height: 56px;
 }
 
 .chat-input {
   flex: 1;
-  min-height: 44px;
+  min-width: 0;
+  min-height: 40px;
+  max-height: 120px;
   padding: 10px 14px;
   font-size: 15px;
   font-family: inherit;
   border: 1px solid var(--hr-border);
-  border-radius: var(--hr-radius-sm);
+  border-radius: 20px;
   resize: none;
   color: var(--hr-text);
   background: var(--hr-card-bg);
+  box-sizing: border-box;
 }
 
 .chat-input-wrap .btn-sm {
   flex-shrink: 0;
+  padding: 10px 18px;
 }

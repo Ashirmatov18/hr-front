@@ -367,8 +367,8 @@
         html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span></div>';
         html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
-        html += ' <button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
-        html += ' <button type="button" class="btn-sm btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches">Chat</button></div></li>';
+        html += '<button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
+        html += '<button type="button" class="btn-sm btn-primary btn-chat" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches">Chat</button></div></li>';
       });
       html += '</ul></div>';
     }

@@ -111,25 +111,27 @@ class HR_Ecosystem {
 	}
 
 	/**
-	 * CORS preflight: respond to OPTIONS for HR namespace.
+	 * CORS preflight: respond to OPTIONS for HR namespace. Must allow PATCH for reaction/messages.
 	 */
 	public function rest_cors_preflight() {
-		if ( $_SERVER['REQUEST_METHOD'] !== 'OPTIONS' ) {
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) || $_SERVER['REQUEST_METHOD'] !== 'OPTIONS' ) {
 			return;
 		}
 		$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
-		if ( strpos( $path, '/wp-json/hr/' ) === false ) {
+		if ( strpos( $path, 'wp-json/hr' ) === false ) {
 			return;
 		}
-		$origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_text_field( $_SERVER['HTTP_ORIGIN'] ) : '';
-		if ( $origin ) {
+		$origin = isset( $_SERVER['HTTP_ORIGIN'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ORIGIN'] ) ) : '';
+		if ( $origin && preg_match( '#^https?://#', $origin ) ) {
 			header( 'Access-Control-Allow-Origin: ' . esc_url_raw( $origin ) );
 		} else {
 			header( 'Access-Control-Allow-Origin: *' );
 		}
-		header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
+		header( 'Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS' );
 		header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-HR-Token, ngrok-skip-browser-warning' );
 		header( 'Access-Control-Max-Age: 86400' );
+		header( 'Content-Length: 0' );
+		status_header( 204 );
 		exit( 0 );
 	}
 
@@ -144,7 +146,7 @@ class HR_Ecosystem {
 			} else {
 				header( 'Access-Control-Allow-Origin: *' );
 			}
-			header( 'Access-Control-Allow-Methods: GET, POST, PATCH, DELETE, OPTIONS' );
+			header( 'Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS' );
 			header( 'Access-Control-Allow-Headers: Authorization, Content-Type, X-HR-Token, ngrok-skip-browser-warning' );
 			header( 'Access-Control-Allow-Credentials: false' );
 		}
