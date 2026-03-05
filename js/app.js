@@ -86,7 +86,13 @@
     html += '<div class="welcome-badges">';
     html += '<span class="role-badge">' + escapeHtml(mode === 'employer' ? 'Employer' : 'Job seeker') + '</span>';
     if (clubBadgeClass && clubBadgeText) html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
-    html += '</div></div>';
+    html += '</div>';
+    if (mode === 'employer' && profile && profile.employer_type) {
+      var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
+      var etLabel = employerTypeLabels[profile.employer_type] || profile.employer_type;
+      html += '<p class="welcome-company-type">Company type: ' + escapeHtml(etLabel) + '</p>';
+    }
+    html += '</div>';
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
@@ -97,24 +103,28 @@
     return html;
   }
 
-  function renderClubServices() {
+  function renderClubServices(stats) {
     var mode = getAppMode();
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
+    if (stats && typeof stats.total_candidates === 'number') {
+      html += '<div class="club-stats">';
+      html += '<span class="club-stat"><strong>' + stats.total_candidates + '</strong> candidates</span>';
+      html += ' <span class="club-stat"><strong>' + stats.total_vacancies + '</strong> vacancies</span>';
+      html += ' <span class="club-stat"><strong>' + stats.closed_vacancies + '</strong> closed</span>';
+      html += '</div>';
+    }
     html += '<div class="nav-cards">';
+    html += '<button type="button" class="nav-card nav-card-first" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
     if (isEmployer) {
       html += '<p class="section-label">Employer</p>';
       html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
-    } else {
-      html += '<p class="section-label">Job seeker</p>';
-      html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="applications"><span>My applications</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
     }
     html += '</div></div>';
     return html;
@@ -145,7 +155,7 @@
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
     if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="club-badge ' + (clubLevel === 'gold' ? 'club-badge-gold' : 'club-badge-silver') + '">' + escapeHtml(clubLabel) + ' member</span></div></div>';
     if (p.role === 'employer' && p.employer_type) {
-      var employerTypeLabels = { startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise', other: 'Other' };
+      var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
       var employerTypeLabel = employerTypeLabels[p.employer_type] || p.employer_type;
       html += '<div class="field"><div class="field-label">Employer type</div><div class="field-value">' + escapeHtml(employerTypeLabel) + '</div></div>';
     }
@@ -353,10 +363,12 @@
       html += '<div class="list-card"><ul class="list-items list-matches">';
       matches.forEach(function (m) {
         var comment = (m.feedback_comment || '').trim();
+        var chatTitle = (m.vacancy_title || '') + (m.employer_name ? ' · ' + m.employer_name : '');
         html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span></div>';
         html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
-        html += ' <button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button></div></li>';
+        html += ' <button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
+        html += ' <button type="button" class="btn-sm btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches">Chat</button></div></li>';
       });
       html += '</ul></div>';
     }
@@ -373,8 +385,10 @@
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (x, i) {
         var label = (x.vacancy_company_name ? x.vacancy_company_name + ' · ' : '') + (x.vacancy_title || '') + ' — ' + (x.candidate_name || '');
+        var chatTitle = (x.vacancy_title || '') + (x.candidate_name ? ' · ' + x.candidate_name : '');
         html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(label) + '</div>';
-        html += '<button type="button" class="btn-sm btn-primary" data-opened-index="' + i + '">View</button></li>';
+        html += '<div class="item-actions"><button type="button" class="btn-sm btn-primary" data-opened-index="' + i + '">View</button>';
+        html += '<button type="button" class="btn-sm btn-outline" data-open-chat="' + x.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes">Chat</button></div></li>';
       });
       html += '</ul></div>';
     }
@@ -447,7 +461,27 @@
     if (!resume && !skills && !tags && !status) {
       html += '<p class="empty-state">No resume or profile data yet.</p>';
     }
-    html += '</div><button type="button" class="btn-back" data-screen="opened-resumes">Back to list</button></div>';
+    var chatTitle = vacancyTitle + (candidateName ? ' · ' + candidateName : '');
+    html += '</div><button type="button" class="btn-sm btn-primary" data-open-chat="' + item.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="opened-resumes">Open chat</button>';
+    html += '<button type="button" class="btn-back" data-screen="opened-resumes">Back to list</button></div>';
+    return html;
+  }
+
+  function renderChatScreen(matchId, title, messages) {
+    messages = ensureArray(messages);
+    var html = '<div class="screen chat-screen" id="chat-screen"><div class="screen-header">';
+    html += '<button type="button" class="back-btn" id="chat-back-btn">‹</button>';
+    html += '<h1 class="screen-title chat-title">' + escapeHtml(title || 'Chat') + '</h1></div>';
+    html += '<div class="chat-messages" id="chat-messages">';
+    messages.forEach(function (msg) {
+      var css = msg.is_mine ? 'chat-msg mine' : 'chat-msg';
+      var time = (msg.created_at || '').replace('T', ' ').substring(0, 16);
+      html += '<div class="' + css + '"><div class="chat-msg-text">' + escapeHtml(msg.message || '') + '</div>';
+      html += '<div class="chat-msg-meta">' + (msg.is_mine ? '' : escapeHtml(msg.sender_name || '') + ' · ') + escapeHtml(time) + '</div></div>';
+    });
+    html += '</div>';
+    html += '<div class="chat-input-wrap"><textarea id="chat-input" class="chat-input" placeholder="Message..." rows="2"></textarea>';
+    html += '<button type="button" class="btn-sm btn-primary" id="chat-send-btn">Send</button></div></div>';
     return html;
   }
 
@@ -847,6 +881,18 @@
         if (item) setContent(renderOpenedResumeDetail(item));
       };
     });
+    el.querySelectorAll('[data-open-chat]').forEach(function (btn) {
+      btn.onclick = function () {
+        var matchId = this.getAttribute('data-open-chat');
+        var title = this.getAttribute('data-chat-title') || '';
+        var back = this.getAttribute('data-chat-back') || 'club-services';
+        if (!matchId) return;
+        window.HR_CHAT_MATCH_ID = matchId;
+        window.HR_CHAT_TITLE = title;
+        window.HR_CHAT_BACK = back;
+        goTo('chat');
+      };
+    });
 
     var vacancySubmit = document.getElementById('vacancy-submit-btn');
     if (vacancySubmit) {
@@ -929,11 +975,12 @@
       return;
     }
     if (screen === 'club-services') {
-      window.HR_API.get('/me').then(function (me) {
-        profile = me;
-        setContent(renderClubServices());
+      Promise.all([ window.HR_API.get('/me'), window.HR_API.get('/stats').catch(function () { return null; }) ]).then(function (arr) {
+        profile = arr[0] || profile;
+        var stats = arr[1];
+        setContent(renderClubServices(stats));
       }).catch(function () {
-        setContent(renderClubServices());
+        setContent(renderClubServices(null));
       });
       return;
     }
@@ -1015,6 +1062,41 @@
         setContent(renderPendingApprovalList(lastPendingApprovalList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load', e);
+      });
+      return;
+    }
+    if (screen === 'chat') {
+      var matchId = window.HR_CHAT_MATCH_ID;
+      var title = window.HR_CHAT_TITLE || 'Chat';
+      var backScreen = window.HR_CHAT_BACK || 'club-services';
+      if (!matchId) {
+        goTo(backScreen);
+        return;
+      }
+      window.HR_API.get('/matches/' + matchId + '/messages').then(function (raw) {
+        var list = ensureArray(raw);
+        setContent(renderChatScreen(matchId, title, list));
+        var backBtn = document.getElementById('chat-back-btn');
+        if (backBtn) backBtn.onclick = function () { goTo(backScreen); };
+        var sendBtn = document.getElementById('chat-send-btn');
+        var inputEl = document.getElementById('chat-input');
+        if (sendBtn && inputEl) {
+          sendBtn.onclick = function () {
+            var text = (inputEl.value || '').trim();
+            if (!text) return;
+            sendBtn.disabled = true;
+            window.HR_API.post('/matches/' + matchId + '/messages', { message: text }).then(function () {
+              inputEl.value = '';
+              goTo('chat');
+            }).catch(function (e) {
+              sendBtn.disabled = false;
+              alert(e.message || 'Failed to send');
+            });
+          };
+        }
+      }).catch(function (e) {
+        showError(e.message || 'Failed to load chat', e);
+        setTimeout(function () { goTo(backScreen); }, 1500);
       });
       return;
     }
