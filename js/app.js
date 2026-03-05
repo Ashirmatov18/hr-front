@@ -767,7 +767,7 @@
         var id = this.getAttribute('data-vacancy-id');
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         detailCloseBtn.disabled = true;
-        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           detailCloseBtn.disabled = false;
@@ -802,7 +802,7 @@
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         var elBtn = this;
         elBtn.disabled = true;
-        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           elBtn.disabled = false;
@@ -837,7 +837,7 @@
         if (!id) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.patch('/matches/' + id, { status: 'confirmed' }).then(function () {
+        window.HR_API.post('/matches/' + id, { status: 'confirmed' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
@@ -855,7 +855,7 @@
         if (!id || !confirm('Reject this match?')) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.patch('/matches/' + id, { status: 'rejected' }).then(function () {
+        window.HR_API.post('/matches/' + id, { status: 'rejected' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
