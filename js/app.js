@@ -49,18 +49,20 @@
       var ln = (profile.last_name || '').trim();
       name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
     }
-    var role = (profile && profile.role) || 'candidate';
-    var roleLabel = role === 'employer' ? 'Employer' : (role === 'admin' ? 'Admin' : 'Job seeker');
     var clubLevel = (profile && profile.club_member_level) ? (profile.club_member_level + '').toLowerCase() : '';
     var clubBadgeClass = clubLevel === 'gold' ? 'club-badge club-badge-gold' : (clubLevel === 'silver' ? 'club-badge club-badge-silver' : '');
     var clubBadgeText = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
+    var role = (profile && profile.role) || 'candidate';
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
     html += '<p class="greeting">Welcome back</p>';
     html += '<p class="user-name">' + escapeHtml(name) + '</p>';
     html += '<div class="welcome-badges">';
-    html += '<span class="role-badge">' + escapeHtml(roleLabel) + '</span>';
-    if (clubBadgeClass && clubBadgeText) html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
+    if (clubBadgeClass && clubBadgeText) {
+      html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
+    } else {
+      html += '<span class="role-badge">Club member</span>';
+    }
     html += '</div>';
     if ((role === 'employer' || role === 'admin') && profile && profile.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
@@ -82,6 +84,8 @@
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
+    html += '<details class="hr-service-block" open>';
+    html += '<summary class="hr-service-summary">HR service</summary>';
     if (stats && typeof stats.total_candidates === 'number') {
       html += '<div class="club-stats">';
       html += '<span class="club-stat"><strong>' + stats.total_candidates + '</strong> candidates</span>';
@@ -100,7 +104,8 @@
       html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
     }
-    html += '</div></div>';
+    html += '</div></details>';
+    html += '</div>';
     return html;
   }
 
@@ -116,7 +121,7 @@
     var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || (p.display_name || '').trim() || p.user_login || '—';
     var nameEmpty = !name || name === '—';
     if (nameEmpty) name = 'Имя не указано';
-    var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (p.role === 'candidate' ? 'Candidate' : (p.role || '—'))));
+    var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : 'Club member'));
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
     var clubLevel = (p.club_member_level || '').toLowerCase();
     var clubLabel = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
@@ -725,23 +730,22 @@
     function checkResumeAndRespond(vacancyId, btn, onSuccess) {
       window.HR_API.get('/resumes/me').then(function (r) {
         var resume = (r && r.resume !== undefined) ? r.resume : r;
-        var hasResume = resume && (resume.id || (resume.title && resume.title.trim()) || (resume.content && resume.content.trim()));
+        var hasResume = resume && (resume.title || resume.content || resume.cv_url || (resume.cv_attachment_id && resume.cv_attachment_id > 0));
         if (!hasResume) {
-          alert('Please fill in your resume first. Go to Club services → Place candidacy.');
-          if (btn) btn.disabled = false;
+          btn.disabled = false;
+          alert('Fill in your resume first. Go to Club services → Place candidacy.');
           return;
         }
-        if (btn) btn.disabled = true;
         window.HR_API.post('/vacancies/' + vacancyId + '/respond', {}).then(function () {
           if (onSuccess) onSuccess();
-          goTo('vacancies');
+          else goTo('vacancies');
         }).catch(function (e) {
-          if (btn) btn.disabled = false;
+          btn.disabled = false;
           alert(e.message || 'Failed');
         });
-      }).catch(function (e) {
-        if (btn) btn.disabled = false;
-        alert(e.message || 'Could not check resume.');
+      }).catch(function () {
+        btn.disabled = false;
+        alert('Fill in your resume first. Go to Club services → Place candidacy.');
       });
     }
 
@@ -749,6 +753,7 @@
       btn.onclick = function () {
         var id = this.getAttribute('data-respond-vacancy');
         if (!id) return;
+        this.disabled = true;
         checkResumeAndRespond(id, this);
       };
     });
@@ -758,7 +763,11 @@
       detailRespondBtn.onclick = function () {
         var id = this.getAttribute('data-vacancy-id');
         if (!id) return;
-        checkResumeAndRespond(id, this, function () { lastVacanciesAppliedIds[id] = true; });
+        this.disabled = true;
+        checkResumeAndRespond(id, this, function () {
+          lastVacanciesAppliedIds[id] = true;
+          goTo('vacancies');
+        });
       };
     }
     var detailCloseBtn = document.getElementById('vacancy-detail-close-btn');
@@ -767,7 +776,7 @@
         var id = this.getAttribute('data-vacancy-id');
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         detailCloseBtn.disabled = true;
-        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           detailCloseBtn.disabled = false;
@@ -802,7 +811,7 @@
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         var elBtn = this;
         elBtn.disabled = true;
-        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           elBtn.disabled = false;
@@ -837,7 +846,7 @@
         if (!id) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.post('/matches/' + id, { status: 'confirmed' }).then(function () {
+        window.HR_API.patch('/matches/' + id, { status: 'confirmed' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
@@ -855,7 +864,7 @@
         if (!id || !confirm('Reject this match?')) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.post('/matches/' + id, { status: 'rejected' }).then(function () {
+        window.HR_API.patch('/matches/' + id, { status: 'rejected' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
