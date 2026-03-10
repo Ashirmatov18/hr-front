@@ -85,7 +85,7 @@
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
     html += '<details class="hr-service-block" open>';
-    html += '<summary class="hr-service-summary">HR service</summary>';
+    html += '<summary class="hr-service-summary">HR service CFO CLUB</summary>';
     if (stats && typeof stats.total_candidates === 'number') {
       html += '<div class="club-stats">';
       html += '<span class="club-stat"><strong>' + stats.total_candidates + '</strong> candidates</span>';
