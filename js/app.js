@@ -85,7 +85,7 @@
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
     html += '<details class="hr-service-block" open>';
-    html += '<summary class="hr-service-summary">HR service CFO CLUB</summary>';
+    html += '<summary class="hr-service-summary">HR Service CFO Club</summary>';
     if (stats && typeof stats.total_candidates === 'number') {
       html += '<div class="club-stats">';
       html += '<span class="club-stat"><strong>' + stats.total_candidates + '</strong> candidates</span>';
@@ -776,7 +776,7 @@
         var id = this.getAttribute('data-vacancy-id');
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         detailCloseBtn.disabled = true;
-        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           detailCloseBtn.disabled = false;
@@ -811,7 +811,7 @@
         if (!id || !confirm('Close this vacancy? It will no longer appear in open vacancies.')) return;
         var elBtn = this;
         elBtn.disabled = true;
-        window.HR_API.patch('/vacancies/' + id, { status: 'closed' }).then(function () {
+        window.HR_API.post('/vacancies/' + id, { status: 'closed' }).then(function () {
           goTo('my-vacancies');
         }).catch(function (e) {
           elBtn.disabled = false;
@@ -846,7 +846,7 @@
         if (!id) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.patch('/matches/' + id, { status: 'confirmed' }).then(function () {
+        window.HR_API.post('/matches/' + id, { status: 'confirmed' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
@@ -864,7 +864,7 @@
         if (!id || !confirm('Reject this match?')) return;
         var that = this;
         that.disabled = true;
-        window.HR_API.patch('/matches/' + id, { status: 'rejected' }).then(function () {
+        window.HR_API.post('/matches/' + id, { status: 'rejected' }).then(function () {
           goTo('pending-approval');
         }).catch(function (e) {
           that.disabled = false;
