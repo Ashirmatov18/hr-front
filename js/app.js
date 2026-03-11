@@ -10,6 +10,7 @@
   var lastMyVacanciesList = [];
   var lastPendingApprovalList = [];
   var lastAllCandidatesList = [];
+  var lastMatchesList = [];
 
   function showLoading(msg) {
     var el = document.getElementById('app-content');
@@ -80,8 +81,13 @@
     return html;
   }
 
-  function renderClubServices(stats) {
+  function renderClubServices(stats, counts) {
+    counts = counts || {};
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
+    var unread = (counts.unread_messages | 0) || 0;
+    var pendingApproval = (counts.pending_approval_count | 0) || 0;
+    var applicationsToMy = (counts.applications_to_my_vacancies | 0) || 0;
+    function badge(n) { return n > 0 ? '<span class="nav-badge">' + (n > 99 ? '99+' : n) + '</span>' : ''; }
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
     html += '<details class="hr-service-block" open>';
@@ -96,12 +102,12 @@
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card nav-card-first" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span>' + badge(unread) + '<span class="arrow">›</span></button>';
     if (isEmployer) {
       html += '<p class="section-label">Employer</p>';
-      html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span>' + badge(applicationsToMy) + '<span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span>' + badge(pendingApproval) + '<span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
     }
     html += '</div></details>';
@@ -183,6 +189,14 @@
     var html = '<div class="screen profile-edit">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="profile">‹</button><h1 class="screen-title">Edit profile</h1></div>';
     html += '<div class="form-card">';
+    html += '<label class="field-label">First name</label>';
+    html += '<input type="text" id="profile-first-name" value="' + escapeHtml(p.first_name || '') + '" placeholder="First name" />';
+    html += '<label class="field-label">Last name</label>';
+    html += '<input type="text" id="profile-last-name" value="' + escapeHtml(p.last_name || '') + '" placeholder="Last name" />';
+    html += '<label class="field-label">Skills</label>';
+    html += '<input type="text" id="profile-skills" value="' + escapeHtml(p.hr_skills || '') + '" placeholder="e.g. PHP, JavaScript, project management" />';
+    html += '<label class="field-label">Tags</label>';
+    html += '<input type="text" id="profile-tags" value="' + escapeHtml(p.hr_tags || '') + '" placeholder="e.g. remote, startup, team lead" />';
     html += '<label class="field-label">LinkedIn profile URL</label>';
     html += '<input type="url" id="profile-linkedin-url" value="' + escapeHtml(p.linkedin_url || '') + '" placeholder="https://linkedin.com/in/..." />';
     html += '<label class="checkbox-label" style="margin-top:10px;"><input type="checkbox" id="profile-linkedin-skip" ' + (p.linkedin_skipped ? 'checked' : '') + ' /> I don\'t have LinkedIn</label>';
@@ -233,7 +247,13 @@
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(fullName) + '</div></div>';
     html += '<div class="field"><div class="field-label">Title</div><div class="field-value">' + escapeHtml(r.title || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">About</div><div class="content-body">' + escapeHtml(r.content || '') + '</div></div>';
-    if (r.cv_url) html += '<a href="' + escapeHtml(r.cv_url) + '" target="_blank" class="link-cv">Download CV</a>';
+    html += '<div class="field"><div class="field-label">Attached files</div><div class="field-value">';
+    if (r.cv_url) {
+      html += '<a href="' + escapeHtml(r.cv_url) + '" target="_blank" rel="noopener" class="link-cv">📄 Download CV</a>';
+    } else {
+      html += '<span class="text-muted">No file attached</span>';
+    }
+    html += '</div></div>';
     html += '</div>';
     html += '<button type="button" class="btn-primary" id="resume-edit-btn">Edit resume</button>';
     html += ' <button type="button" class="btn-danger" id="resume-delete-btn">Delete resume</button>';
@@ -297,7 +317,9 @@
         var statusLabel = isClosed ? 'Closed' : 'Open';
         var modLabel = modStatus === 'pending_review' ? 'Pending review' : (modStatus === 'rejected' ? 'Rejected' : (modStatus === 'published' ? 'Published' : ''));
         var modClass = modStatus === 'pending_review' ? 'moderation-status moderation-pending' : (modStatus === 'rejected' ? 'moderation-status moderation-rejected' : (modStatus === 'published' ? 'moderation-status moderation-published' : ''));
-        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + ' <span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span>' + (modLabel ? ' <span class="' + modClass + '">' + escapeHtml(modLabel) + '</span>' : '') + '</div>';
+        var appCount = (v.applications_count | 0);
+        var appLabel = appCount > 0 ? ' <span class="vacancy-app-count">' + appCount + ' response' + (appCount !== 1 ? 's' : '') + '</span>' : '';
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>' + (v.company_name ? '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>' : '') + ' <span class="' + statusClass + '">' + escapeHtml(statusLabel) + '</span>' + (modLabel ? ' <span class="' + modClass + '">' + escapeHtml(modLabel) + '</span>' : '') + appLabel + '</div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-view-my-vacancy="' + i + '">View</button>';
         if (!isClosed && modStatus === 'published') html += '<button type="button" class="btn-sm btn-close-vacancy" data-close-vacancy="' + v.id + '">Close</button>';
         html += '<button type="button" class="btn-sm btn-danger" data-delete-my-vacancy="' + v.id + '">Delete</button></div></li>';
@@ -344,15 +366,27 @@
 
   function renderMatchesWithReaction(matches) {
     matches = ensureArray(matches);
+    var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var html = '<div class="screen" id="matches-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My matches</h1></div>';
     if (!matches || matches.length === 0) {
       html += '<div class="empty-state">No matches yet.</div>';
+    } else if (isEmployer) {
+      html += '<div class="list-card"><ul class="list-items">';
+      matches.forEach(function (m, i) {
+        var chatTitle = (m.vacancy_title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
+        var unreadBadge = (m.unread_count | 0) > 0 ? ' <span class="nav-badge">' + (m.unread_count > 99 ? '99+' : m.unread_count) + '</span>' : '';
+        html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' — ' + escapeHtml(m.candidate_name || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span>' + unreadBadge + '</div>';
+        html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-match-employer-view="' + i + '">View</button>';
+        html += '<button type="button" class="btn-sm btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.status || '') + '">Chat</button></div></li>';
+      });
+      html += '</ul></div>';
     } else {
       html += '<div class="list-card"><ul class="list-items list-matches">';
       matches.forEach(function (m) {
         var comment = (m.feedback_comment || '').trim();
         var chatTitle = (m.vacancy_title || '') + (m.employer_name ? ' · ' + m.employer_name : '');
-        html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span></div>';
+        var unreadBadge = (m.unread_count | 0) > 0 ? ' <span class="nav-badge">' + (m.unread_count > 99 ? '99+' : m.unread_count) + '</span>' : '';
+        html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span>' + unreadBadge + '</div>';
         html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
         html += '<button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
@@ -600,13 +634,18 @@
         var urlEl = document.getElementById('profile-linkedin-url');
         var skipEl = document.getElementById('profile-linkedin-skip');
         var url = (urlEl && urlEl.value) ? urlEl.value.trim() : '';
-        var skipped = skipEl && skipEl.checked;
-        if (!skipped && !url) {
-          alert('Enter LinkedIn URL or check "I don\'t have LinkedIn".');
-          return;
-        }
+        var skipped = !!(skipEl && skipEl.checked);
+        var firstNameEl = document.getElementById('profile-first-name');
+        var lastNameEl = document.getElementById('profile-last-name');
+        var skillsEl = document.getElementById('profile-skills');
+        var tagsEl = document.getElementById('profile-tags');
+        var payload = { linkedin_url: skipped ? '' : url, linkedin_skipped: skipped };
+        if (firstNameEl) payload.first_name = (firstNameEl.value || '').trim();
+        if (lastNameEl) payload.last_name = (lastNameEl.value || '').trim();
+        if (skillsEl) payload.hr_skills = (skillsEl.value || '').trim();
+        if (tagsEl) payload.hr_tags = (tagsEl.value || '').trim();
         profileSaveBtn.disabled = true;
-        window.HR_API.post('/me', { linkedin_url: skipped ? '' : url, linkedin_skipped: skipped }).then(function () {
+        window.HR_API.post('/me', payload).then(function () {
           return window.HR_API.get('/me');
         }).then(function (me) {
           profile = me;
@@ -840,6 +879,20 @@
         if (item) setContent(renderPendingApprovalDetail(item));
       };
     });
+    el.querySelectorAll('[data-match-employer-view]').forEach(function (btn) {
+      btn.onclick = function () {
+        var i = parseInt(this.getAttribute('data-match-employer-view'), 10);
+        var m = lastMatchesList[i];
+        if (!m) return;
+        var chatTitle = (m.vacancy_title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
+        var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="matches">‹</button><h1 class="screen-title">Match</h1></div>';
+        html += '<div class="content-card"><p class="content-meta">' + escapeHtml(m.vacancy_title || '') + ' · ' + escapeHtml(m.candidate_name || '') + '</p>';
+        html += '<p><span class="match-status">' + escapeHtml(m.status || '') + '</span></p></div>';
+        html += '<button type="button" class="btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.status || '') + '">Open chat</button>';
+        html += '<button type="button" class="btn-back" data-screen="matches">Back to list</button></div>';
+        setContent(html);
+      };
+    });
     el.querySelectorAll('[data-pending-approve]').forEach(function (btn) {
       btn.onclick = function () {
         var id = this.getAttribute('data-pending-approve');
@@ -1007,12 +1060,17 @@
       return;
     }
     if (screen === 'club-services') {
-      Promise.all([ window.HR_API.get('/me'), window.HR_API.get('/stats').catch(function () { return null; }) ]).then(function (arr) {
+      Promise.all([
+        window.HR_API.get('/me'),
+        window.HR_API.get('/stats').catch(function () { return null; }),
+        window.HR_API.get('/me/counts').catch(function () { return {}; })
+      ]).then(function (arr) {
         profile = arr[0] || profile;
         var stats = arr[1];
-        setContent(renderClubServices(stats));
+        var counts = arr[2] || {};
+        setContent(renderClubServices(stats, counts));
       }).catch(function () {
-        setContent(renderClubServices(null));
+        setContent(renderClubServices(null, {}));
       });
       return;
     }
@@ -1073,6 +1131,7 @@
     if (screen === 'matches') {
       window.HR_API.get('/matches/me').then(function (raw) {
         var list = ensureArray(raw);
+        lastMatchesList = list;
         setContent(renderMatchesWithReaction(list));
       }).catch(function (e) {
         showError(e.message || 'Failed to load', e);
