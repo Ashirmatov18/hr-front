@@ -74,8 +74,6 @@
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
-    html += '<p class="section-label">Account</p>';
-    html += '<button type="button" class="nav-card" data-screen="debug"><span>Диагностика бэкенда</span><span class="arrow">›</span></button>';
     html += '<p class="app-build">HR Ecosystem · Build 2024.02.24</p>';
     html += '</div></div>';
     return html;
@@ -136,7 +134,7 @@
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
-    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + ' <span class="profile-hint">(set in WordPress admin)</span></div></div>';
+    html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
     if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="club-badge ' + (clubLevel === 'gold' ? 'club-badge-gold' : 'club-badge-silver') + '">' + escapeHtml(clubLabel) + ' member</span></div></div>';
     if (p.role === 'employer' && p.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
@@ -283,7 +281,7 @@
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Vacancies</h1></div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
-      html += '<p class="vacancies-hint">Если вы создали вакансию в админке WordPress — привяжите её к категории <strong>Public</strong> или включите <strong>Club badge</strong> в профиле пользователя.</p>';
+      html += '<p class="vacancies-hint">Если вакансия создана в админ-панели — привяжите её к категории <strong>Public</strong> или включите <strong>Club badge</strong> в профиле пользователя.</p>';
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       vacancies.forEach(function (v, i) {
@@ -584,7 +582,7 @@
       });
     });
     if (el) {
-      // no mode choice — role is set in WordPress admin
+      // role is set in admin
     }
     var offerCb = document.getElementById('offer-accept-cb');
     var offerBtn = document.getElementById('offer-accept-btn');
@@ -656,7 +654,7 @@
         });
       });
     }
-    // Role is set in WordPress admin — no "Switch mode" buttons
+    // Role is set in admin
     bindCustomActions();
   }
 
@@ -752,7 +750,7 @@
           resumeAiBtn.textContent = 'Generate with AI';
           var msg = e.message || 'AI generation failed.';
           if (e.status === 404 || (msg && (msg.indexOf('маршрут') !== -1 || msg.indexOf('route') !== -1 || msg.indexOf('not found') !== -1)))
-            msg = 'Функция AI пока недоступна: обновите плагин на WordPress (должны быть маршруты /ai/generate-resume и OpenAI API Key в настройках).';
+            msg = 'Функция AI пока недоступна: настройте маршруты AI и API Key на сервере.';
           alert(msg);
         });
       };
@@ -1027,7 +1025,7 @@
           vacancyAiBtn.textContent = 'Generate description with AI';
           var msg = e.message || 'AI parsing failed.';
           if (e.status === 404 || (msg && (msg.indexOf('маршрут') !== -1 || msg.indexOf('route') !== -1 || msg.indexOf('not found') !== -1)))
-            msg = 'Функция AI пока недоступна: обновите плагин на WordPress (маршруты /ai/parse-vacancy и OpenAI API Key в настройках).';
+            msg = 'Функция AI пока недоступна: настройте маршруты AI и API Key на сервере.';
           alert(msg);
         });
       };
@@ -1231,34 +1229,6 @@
       setContent(renderCreateVacancyForm());
       return;
     }
-    if (screen === 'debug') {
-      var debugUrl = (window.HR_API.getBase && window.HR_API.getBase()) || (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || '';
-      if (debugUrl && typeof debugUrl === 'string') {
-        debugUrl = debugUrl.replace(/\/$/, '') + (debugUrl.indexOf('/wp-json') !== -1 ? '' : '/wp-json/hr/v1') + '/debug';
-      } else {
-        debugUrl = '?';
-      }
-      var tokenSent = !!(window.HR_API.getToken && window.HR_API.getToken());
-      window.HR_API.get('/debug').then(function (data) {
-        var html = '<div class="screen debug"><div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Диагностика бэкенда</h1></div>';
-        html += '<div class="profile-card">';
-        html += '<div class="field"><div class="field-label">URL запроса</div><div class="field-value debug-url">' + escapeHtml(debugUrl) + '</div></div>';
-        html += '<div class="field"><div class="field-label">Токен в приложении</div><div class="field-value">' + (tokenSent ? 'Да, отправлен' : 'Нет — бэк не узнает вас') + '</div></div>';
-        html += '<p class="debug-message">' + escapeHtml(data.message || '') + '</p>';
-        html += '<div class="field"><div class="field-label">user_id</div><div class="field-value">' + (data.user_id != null ? data.user_id : '—') + '</div></div>';
-        html += '<div class="field"><div class="field-label">Вакансий на бэке</div><div class="field-value">' + (data.vacancies_count != null ? data.vacancies_count : '—') + '</div></div>';
-        html += '<div class="field"><div class="field-label">ID резюме</div><div class="field-value">' + (data.resume_id != null ? data.resume_id : '—') + '</div></div>';
-        if (data.profile && typeof data.profile === 'object') {
-          html += '<p class="section-label">Профиль с бэка</p><pre class="debug-json">' + escapeHtml(JSON.stringify(data.profile, null, 2)) + '</pre>';
-        }
-        html += '<p class="section-label">Полный ответ сервера (как пришёл)</p><pre class="debug-json">' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
-        html += '</div><button type="button" class="btn-back" data-screen="home">Назад</button></div>';
-        setContent(html);
-      }).catch(function (e) {
-        showError('Не удалось получить ответ от бэкенда. Проверьте URL в config.js и что плагин обновлён.', e);
-      });
-      return;
-    }
     setContent(renderHome());
   }
 
@@ -1267,7 +1237,7 @@
     var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/dev-token';
     var html = '<div class="screen dev-login">';
     html += '<h1 class="screen-title">Dev mode</h1>';
-    html += '<p class="hint">Get a token from WordPress (admin): open site in same browser, run in console:</p>';
+    html += '<p class="hint">Get a token from the admin panel: open the site in the same browser, run in console:</p>';
     html += '<pre class="code">fetch("' + escapeHtml(url) + '", { credentials: "include", headers: { "X-WP-Nonce": wpApiSettings.nonce } }).then(r=>r.json()).then(d=>alert(d.token))</pre>';
     html += '<p class="hint">Paste the token below or open with <code>?dev=1&token=YOUR_TOKEN</code></p>';
     html += '<input type="text" id="dev-token-input" placeholder="Paste token" />';

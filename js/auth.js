@@ -110,10 +110,10 @@
       }).catch(function () {
         window.HR_API.setToken(null);
         setDevToken(null);
-        throw new Error('Invalid or expired token. Get a new one from WordPress admin.');
+        throw new Error('Invalid or expired token. Get a new one from the administrator.');
       });
     }
-    throw new Error('DEV: No token. Get token from WordPress (see instructions) and paste below or set DEV_TOKEN in config.js');
+    throw new Error('DEV: No token. Get token from the admin (see instructions) and paste below or set DEV_TOKEN in config.js');
   }
 
   window.HR_AUTH = {
