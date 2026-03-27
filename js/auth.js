@@ -103,6 +103,11 @@
       return login();
     }
     var token = getDevToken();
+    if (!token && typeof window !== 'undefined' && window.localStorage) {
+      try {
+        token = window.localStorage.getItem('hr_token');
+      } catch (e) {}
+    }
     if (token) {
       window.HR_API.setToken(token);
       return window.HR_API.get('/me').then(function (me) {
@@ -110,10 +115,50 @@
       }).catch(function () {
         window.HR_API.setToken(null);
         setDevToken(null);
+        try { window.localStorage.removeItem('hr_token'); } catch (e) {}
         throw new Error('Invalid or expired token. Get a new one from the administrator.');
       });
     }
     throw new Error('DEV: No token. Get token from the admin (see instructions) and paste below or set DEV_TOKEN in config.js');
+  }
+
+  /**
+   * If URL has Telegram Login Widget return params (id, auth_date, hash), POST to /auth/widget, save token, redirect to clean URL.
+   * Returns a Promise that resolves to true if we handled redirect (caller should not continue init), or false.
+   */
+  function tryAuthFromWidgetRedirect() {
+    if (typeof window === 'undefined' || !window.location || !window.location.search) return Promise.resolve(false);
+    var params = new URLSearchParams(window.location.search);
+    var id = params.get('id');
+    var auth_date = params.get('auth_date');
+    var hash = params.get('hash');
+    if (!id || !auth_date || !hash) return Promise.resolve(false);
+    var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || window.location.origin;
+    var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/auth/widget';
+    var body = {
+      id: parseInt(id, 10),
+      auth_date: parseInt(auth_date, 10),
+      hash: hash,
+      first_name: params.get('first_name') || '',
+      last_name: params.get('last_name') || '',
+      username: params.get('username') || '',
+      photo_url: params.get('photo_url') || '',
+    };
+    var headers = { 'Content-Type': 'application/json' };
+    if (base.indexOf('ngrok') !== -1) headers['ngrok-skip-browser-warning'] = 'true';
+    return fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+      .then(function (res) { return res.json().catch(function () { return {}; }); })
+      .then(function (data) {
+        if (data.token) {
+          window.HR_API.setToken(data.token);
+          try { window.localStorage.setItem('hr_token', data.token); } catch (e) {}
+          var clean = window.location.origin + window.location.pathname + (window.location.pathname.indexOf('?') !== -1 ? '' : '');
+          window.location.replace(clean || window.location.origin + '/');
+          return true;
+        }
+        return false;
+      })
+      .catch(function () { return false; });
   }
 
   window.HR_AUTH = {
@@ -121,6 +166,7 @@
     isTelegramWebView: isTelegramWebView,
     login: login,
     ensureAuth: ensureAuth,
+    tryAuthFromWidgetRedirect: tryAuthFromWidgetRedirect,
     isDevMode: isDevMode,
     getDevToken: getDevToken,
     setDevToken: setDevToken,

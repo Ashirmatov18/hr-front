@@ -74,8 +74,31 @@
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
-    html += '<p class="app-build">HR Ecosystem · Build 2024.02.24</p>';
+    html += '<button type="button" class="nav-card" data-screen="instruction"><span>' + escapeHtml(((window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TITLE) ? window.HR_CONFIG.INSTRUCTION_TITLE : 'Instruction')) + '</span><span class="arrow">›</span></button>';
+    var webAppUrl = (window.HR_CONFIG && window.HR_CONFIG.WEB_APP_URL) ? (window.HR_CONFIG.WEB_APP_URL + '').trim() : '';
+    if (webAppUrl && typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
+      html += '<button type="button" class="nav-card" id="nav-web-version"><span>Web version</span><span class="arrow">›</span></button>';
+    }
+    var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : 'HR Ecosystem';
+    html += '<p class="app-build">' + escapeHtml(appTitle) + ' · Build 2024.02.24</p>';
     html += '</div></div>';
+    return html;
+  }
+
+  function renderInstruction() {
+    var title = (window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TITLE) ? (window.HR_CONFIG.INSTRUCTION_TITLE + '').trim() : 'Instruction';
+    var text = (window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TEXT) ? (window.HR_CONFIG.INSTRUCTION_TEXT + '') : '';
+    var html = '<div class="screen instruction">';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">' + escapeHtml(title) + '</h1></div>';
+    html += '<div class="profile-card">';
+    if (text && text.trim()) {
+      html += '<div class="content-body">' + escapeHtml(text).replace(/\n/g, '<br>') + '</div>';
+    } else {
+      html += '<div class="content-body">Текст инструкции пока не задан. Его можно заполнить в <code>mini-app/js/config.js</code> (поле <code>INSTRUCTION_TEXT</code>).</div>';
+    }
+    html += '</div>';
+    html += '<button type="button" class="btn-back" data-screen="home">Back</button>';
+    html += '</div>';
     return html;
   }
 
@@ -89,7 +112,8 @@
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
     html += '<details class="hr-service-block" open>';
-    html += '<summary class="hr-service-summary">HR Service CFO Club</summary>';
+    var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : '';
+    html += '<summary class="hr-service-summary">' + escapeHtml(appTitle || 'HR Service CFO Club') + '</summary>';
     if (stats && typeof stats.total_candidates === 'number') {
       html += '<div class="club-stats">';
       html += '<span class="club-stat"><strong>' + stats.total_candidates + '</strong> candidates</span>';
@@ -98,7 +122,16 @@
       html += '</div>';
     }
     html += '<div class="nav-cards">';
-    html += '<button type="button" class="nav-card nav-card-first" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
+    var publicUrl = (window.HR_CONFIG && window.HR_CONFIG.PUBLIC_CHAT_URL) ? (window.HR_CONFIG.PUBLIC_CHAT_URL + '').trim() : '';
+    var clubUrl = (window.HR_CONFIG && window.HR_CONFIG.CLUB_MEMBER_URL) ? (window.HR_CONFIG.CLUB_MEMBER_URL + '').trim() : '';
+    var hasExternal = !!(publicUrl || clubUrl);
+    if (publicUrl) {
+      html += '<button type="button" class="nav-card nav-card-first" data-external-url="' + escapeHtml(publicUrl) + '"><span>Apply to public chat</span><span class="arrow">›</span></button>';
+    }
+    if (clubUrl) {
+      html += '<button type="button" class="nav-card ' + (publicUrl ? '' : 'nav-card-first') + '" data-external-url="' + escapeHtml(clubUrl) + '"><span>Apply to club member</span><span class="arrow">›</span></button>';
+    }
+    html += '<button type="button" class="nav-card ' + (hasExternal ? '' : 'nav-card-first') + '" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span>' + badge(unread) + '<span class="arrow">›</span></button>';
     if (isEmployer) {
@@ -581,6 +614,22 @@
         goTo(this.getAttribute('data-screen'));
       });
     });
+    var externalLinks = el ? el.querySelectorAll('[data-external-url]') : [];
+    externalLinks.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var url = (this.getAttribute('data-external-url') || '').trim();
+        if (!url) return;
+        try {
+          if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+            window.Telegram.WebApp.openLink(url);
+          } else {
+            window.open(url, '_blank', 'noopener');
+          }
+        } catch (e) {
+          window.open(url, '_blank', 'noopener');
+        }
+      });
+    });
     if (el) {
       // role is set in admin
     }
@@ -661,6 +710,13 @@
   function bindCustomActions() {
     var el = document.getElementById('app-content');
     if (!el) return;
+    var webVersionBtn = document.getElementById('nav-web-version');
+    if (webVersionBtn && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      var webAppUrl = (window.HR_CONFIG && window.HR_CONFIG.WEB_APP_URL) ? (window.HR_CONFIG.WEB_APP_URL + '').trim() : '';
+      if (webAppUrl) {
+        webVersionBtn.addEventListener('click', function () { window.Telegram.WebApp.openLink(webAppUrl); });
+      }
+    }
     var role = (profile && profile.role) || 'candidate';
 
     var editBtn = document.getElementById('resume-edit-btn');
@@ -1044,6 +1100,10 @@
       });
       return;
     }
+    if (screen === 'instruction') {
+      setContent(renderInstruction());
+      return;
+    }
     if (screen === 'profile') {
       window.HR_API.get('/me').then(function (me) {
         profile = me;
@@ -1235,8 +1295,14 @@
   function renderDevLogin() {
     var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || window.location.origin;
     var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/dev-token';
+    var hasBot = (window.HR_CONFIG && window.HR_CONFIG.TELEGRAM_BOT_USERNAME) ? (window.HR_CONFIG.TELEGRAM_BOT_USERNAME + '').trim() : '';
     var html = '<div class="screen dev-login">';
-    html += '<h1 class="screen-title">Dev mode</h1>';
+    html += '<h1 class="screen-title">Log in</h1>';
+    if (hasBot) {
+      html += '<p class="hint">Log in with your Telegram account (web version):</p>';
+      html += '<div id="telegram-widget-container"></div>';
+      html += '<p class="section-label">Or use token</p>';
+    }
     html += '<p class="hint">Get a token from the admin panel: open the site in the same browser, run in console:</p>';
     html += '<pre class="code">fetch("' + escapeHtml(url) + '", { credentials: "include", headers: { "X-WP-Nonce": wpApiSettings.nonce } }).then(r=>r.json()).then(d=>alert(d.token))</pre>';
     html += '<p class="hint">Paste the token below or open with <code>?dev=1&token=YOUR_TOKEN</code></p>';
@@ -1257,50 +1323,76 @@
       var saved = window.localStorage.getItem('hr_token');
       if (saved && window.HR_API && window.HR_API.setToken) window.HR_API.setToken(saved);
     } catch (e) {}
-    showLoading('Logging in...');
-    window.HR_AUTH.ensureAuth()
-      .then(function (me) {
-        profile = me || profile;
-        if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
-          setContent(renderOfferScreen());
-          return;
-        }
-        goTo('home');
-      })
-      .catch(function (e) {
-        var msg = e.message || 'Auth failed. Open this app from Telegram.';
-        if (e.data && e.data.message) msg = e.data.message;
-        var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
-        if (!inTelegram) {
-          setContent(renderDevLogin());
-          var btn = document.getElementById('dev-token-submit');
-          var input = document.getElementById('dev-token-input');
-          if (btn && input) {
-            btn.addEventListener('click', function () {
-              var token = (input.value || '').trim();
-              if (!token) return;
-              window.HR_AUTH.setDevToken(token);
-              window.HR_API.setToken(token);
-              showLoading('Checking token...');
-              window.HR_API.get('/me').then(function (me) {
-                profile = me;
-                if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
-                  setContent(renderOfferScreen());
-                  return;
-                }
-                goTo('home');
-              }).catch(function () {
-                window.HR_API.setToken(null);
-                window.HR_AUTH.setDevToken(null);
-                setContent(renderDevLogin());
-                alert('Invalid or expired token.');
-              });
-            });
+    var authPromise = (window.HR_AUTH.tryAuthFromWidgetRedirect && window.HR_AUTH.tryAuthFromWidgetRedirect()) || Promise.resolve(false);
+    authPromise.then(function (handled) {
+      if (handled) return;
+      showLoading('Logging in...');
+      window.HR_AUTH.ensureAuth()
+        .then(function (me) {
+          profile = me || profile;
+          try {
+            var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : '';
+            if (appTitle) document.title = appTitle;
+          } catch (e) {}
+          if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
+            setContent(renderOfferScreen());
+            return;
           }
-          return;
-        }
-        showError(msg, e);
-      });
+          goTo('home');
+        })
+        .catch(function (e) {
+          var msg = e.message || 'Auth failed. Open this app from Telegram.';
+          if (e.data && e.data.message) msg = e.data.message;
+          var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
+          if (!inTelegram) {
+            setContent(renderDevLogin());
+            injectTelegramLoginWidget();
+            var btn = document.getElementById('dev-token-submit');
+            var input = document.getElementById('dev-token-input');
+            if (btn && input) {
+              btn.addEventListener('click', function () {
+                var token = (input.value || '').trim();
+                if (!token) return;
+                window.HR_AUTH.setDevToken(token);
+                window.HR_API.setToken(token);
+                showLoading('Checking token...');
+                window.HR_API.get('/me').then(function (me) {
+                  profile = me;
+                  if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
+                    setContent(renderOfferScreen());
+                    return;
+                  }
+                  goTo('home');
+                }).catch(function () {
+                  window.HR_API.setToken(null);
+                  window.HR_AUTH.setDevToken(null);
+                  setContent(renderDevLogin());
+                  injectTelegramLoginWidget();
+                  alert('Invalid or expired token.');
+                });
+              });
+            }
+            return;
+          }
+          showError(msg, e);
+        });
+    });
+  }
+
+  function injectTelegramLoginWidget() {
+    var botUsername = (window.HR_CONFIG && window.HR_CONFIG.TELEGRAM_BOT_USERNAME) ? (window.HR_CONFIG.TELEGRAM_BOT_USERNAME + '').trim() : '';
+    var container = document.getElementById('telegram-widget-container');
+    if (!container || !botUsername) return;
+    if (container.querySelector('script[data-telegram-login]')) return;
+    var authUrl = window.location.origin + (window.location.pathname || '/');
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://telegram.org/js/telegram-widget.js?22';
+    s.setAttribute('data-telegram-login', botUsername);
+    s.setAttribute('data-size', 'large');
+    s.setAttribute('data-auth-url', authUrl);
+    s.setAttribute('data-request-access', 'write');
+    container.appendChild(s);
   }
 
   if (document.readyState === 'loading') {
