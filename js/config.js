@@ -8,6 +8,11 @@
     INSTRUCTION_TITLE: 'Инструкция',
     // Text for "Instruction" screen (can be edited without code changes)
     INSTRUCTION_TEXT: '',
+    // Optional branding tokens (leave empty now; fill after branding package is approved)
+    BRAND_PRIMARY: '',
+    BRAND_ACCENT: '',
+    BRAND_BG: '',
+    BRAND_CARD_BG: '',
     // Optional links to club services (can be Telegram deep links or website URLs)
     PUBLIC_CHAT_URL: '',
     CLUB_MEMBER_URL: '',

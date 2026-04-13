@@ -1,6 +1,6 @@
 /* HR Ecosystem Mini App — refreshed design */
 :root {
-  --hr-bg: #f1f5f9;
+  --hr-bg: #ffffff;
   --hr-card-bg: #ffffff;
   --hr-primary: #1e40af;
   --hr-primary-hover: #1e3a8a;
@@ -12,7 +12,12 @@
   --hr-radius-sm: 12px;
   --hr-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
   --hr-shadow-hover: 0 8px 28px rgba(15, 23, 42, 0.1);
-  --hr-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --hr-font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --hr-space-1: 8px;
+  --hr-space-2: 12px;
+  --hr-space-3: 16px;
+  --hr-space-4: 20px;
+  --hr-space-5: 24px;
   --hr-gold: #b45309;
   --hr-gold-bg: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
   --hr-silver: #4b5563;
@@ -42,18 +47,29 @@ body {
   font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  background-image: none;
 }
 
 #app-content {
   min-height: 100vh;
-  padding: 20px;
-  padding-bottom: 28px;
+  padding: clamp(14px, 3vw, 22px);
+  padding-bottom: clamp(18px, 4vw, 30px);
   animation: hr-fade-in 0.3s ease-out;
 }
 
 @keyframes hr-fade-in {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hr-rise-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes hr-soft-glow {
+  0% { box-shadow: var(--hr-shadow); }
+  100% { box-shadow: 0 8px 30px rgba(30, 64, 175, 0.14); }
 }
 
 /* Loading & error */
@@ -125,7 +141,7 @@ body {
 
 /* Screen layout */
 .screen {
-  max-width: 420px;
+  max-width: 430px;
   margin: 0 auto;
 }
 
@@ -133,7 +149,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: var(--hr-space-4);
 }
 
 .screen-header .back-btn {
@@ -168,12 +184,12 @@ body {
 .home .welcome-card {
   background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
-  padding: 24px 22px;
-  margin-bottom: 24px;
+  padding: 24px;
+  margin-bottom: var(--hr-space-5);
   box-shadow: var(--hr-shadow);
   border: 1px solid var(--hr-border);
   border-left: 4px solid var(--hr-primary);
-  animation: hr-fade-in 0.35s ease-out;
+  animation: hr-rise-in 0.4s ease-out;
 }
 
 .home .welcome-card .greeting {
@@ -211,6 +227,16 @@ body {
   text-transform: capitalize;
   background: rgba(30, 64, 175, 0.1);
   color: var(--hr-primary);
+}
+
+.role-badge-verified {
+  background: rgba(16, 185, 129, 0.14);
+  color: #0f766e;
+}
+
+.role-badge-unverified {
+  background: rgba(245, 158, 11, 0.16);
+  color: #9a3412;
 }
 
 .home .club-badge {
@@ -256,17 +282,7 @@ body {
 
 /* Build label — видно, что фронт обновился */
 .app-build {
-  margin-top: 24px;
-  padding: 10px 14px;
-  font-size: 11px;
-  color: var(--hr-text-secondary);
-  background: rgba(30, 64, 175, 0.06);
-  border-radius: 8px;
-  text-align: center;
-}
-
-.app-build {
-  margin-top: 24px;
+  margin-top: var(--hr-space-5);
   padding: 10px 14px;
   font-size: 11px;
   color: var(--hr-text-secondary);
@@ -355,7 +371,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 22px;
+  padding: 18px 20px;
   background: var(--hr-card-bg);
   border: 1px solid var(--hr-border);
   border-radius: var(--hr-radius);
@@ -366,14 +382,23 @@ body {
   text-align: left;
   width: 100%;
   box-shadow: var(--hr-shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease, background 0.22s ease;
+  animation: hr-rise-in 0.35s ease both;
 }
+
+.nav-cards .nav-card:nth-child(1) { animation-delay: 0.03s; }
+.nav-cards .nav-card:nth-child(2) { animation-delay: 0.08s; }
+.nav-cards .nav-card:nth-child(3) { animation-delay: 0.13s; }
+.nav-cards .nav-card:nth-child(4) { animation-delay: 0.18s; }
+.nav-cards .nav-card:nth-child(5) { animation-delay: 0.23s; }
+.nav-cards .nav-card:nth-child(6) { animation-delay: 0.28s; }
 
 .nav-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--hr-shadow-hover);
   border-color: var(--hr-primary);
   background: var(--hr-card-bg);
+  animation: hr-soft-glow 0.22s ease forwards;
 }
 
 .nav-card:active {
@@ -441,8 +466,8 @@ body {
 .profile-card {
   background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
-  padding: 24px;
-  margin-bottom: 20px;
+  padding: 22px;
+  margin-bottom: var(--hr-space-4);
   box-shadow: var(--hr-shadow);
   border: 1px solid var(--hr-border);
 }
@@ -500,7 +525,7 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: var(--hr-space-3);
   padding: 12px 20px;
   background: var(--hr-card-bg);
   color: var(--hr-text);
@@ -528,7 +553,21 @@ body {
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  margin-right: 8px;
+  margin-right: 0;
+  line-height: 1.2;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(30, 64, 175, 0.24);
+}
+
+.btn-primary:active,
+.btn-back:active,
+.btn-secondary:active,
+.btn-danger:active {
+  transform: translateY(0);
 }
 
 .btn-primary:hover {
@@ -543,8 +582,8 @@ body {
 .btn-secondary {
   display: inline-block;
   padding: 10px 18px;
-  margin-right: 10px;
-  margin-bottom: 8px;
+  margin-right: 0;
+  margin-bottom: var(--hr-space-1);
   font-size: 15px;
   font-weight: 600;
   color: var(--tg-theme-button-text-color, #fff);
@@ -656,7 +695,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  margin-right: 8px;
+  margin-right: 0;
 }
 .btn-danger:hover { opacity: 0.9; }
 .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -833,7 +872,7 @@ body {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  margin-bottom: 8px;
+  margin-bottom: var(--hr-space-1);
 }
 
 .btn-close-vacancy:hover { opacity: 0.9; }
@@ -873,7 +912,7 @@ body {
   background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
   padding: 20px;
-  margin-bottom: 16px;
+  margin-bottom: var(--hr-space-3);
   box-shadow: var(--hr-shadow);
 }
 
@@ -927,6 +966,7 @@ body {
   border-radius: var(--hr-radius);
   overflow: hidden;
   box-shadow: var(--hr-shadow);
+  animation: hr-rise-in 0.28s ease-out;
 }
 
 .list-items {
@@ -936,7 +976,7 @@ body {
 }
 
 .list-items li {
-  padding: 16px 18px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--hr-border);
   font-size: 15px;
   line-height: 1.4;
@@ -964,8 +1004,9 @@ body {
   background: var(--hr-card-bg);
   border-radius: var(--hr-radius);
   padding: 20px;
-  margin-bottom: 16px;
+  margin-bottom: var(--hr-space-3);
   box-shadow: var(--hr-shadow);
+  animation: hr-rise-in 0.28s ease-out;
 }
 
 .content-card .content-title {
@@ -1103,6 +1144,7 @@ body {
   background: var(--hr-card-bg);
   border: 1px solid var(--hr-border);
   box-sizing: border-box;
+  animation: hr-rise-in 0.2s ease-out;
 }
 
 .chat-msg.mine {
@@ -1131,7 +1173,7 @@ body {
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-top: 1px solid var(--hr-border);
   background: var(--hr-bg);
   min-height: 56px;
@@ -1169,10 +1211,31 @@ body {
 
 .chat-employer-actions {
   display: flex;
-  gap: 10px;
-  padding: 10px 16px;
+  gap: 8px;
+  padding: 10px 14px;
   border-top: 1px solid var(--hr-border);
   background: var(--hr-bg);
+}
+
+@media (max-width: 420px) {
+  .home .welcome-card,
+  .profile-card,
+  .form-card,
+  .content-card {
+    padding: 18px;
+  }
+  .nav-card {
+    padding: 16px 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .chat-employer-actions .btn-sm {

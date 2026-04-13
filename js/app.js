@@ -11,6 +11,8 @@
   var lastPendingApprovalList = [];
   var lastAllCandidatesList = [];
   var lastMatchesList = [];
+  var vacanciesStatusFilter = 'open';
+  var myVacanciesStatusFilter = '';
 
   function showLoading(msg) {
     var el = document.getElementById('app-content');
@@ -50,20 +52,14 @@
       var ln = (profile.last_name || '').trim();
       name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
     }
-    var clubLevel = (profile && profile.club_member_level) ? (profile.club_member_level + '').toLowerCase() : '';
-    var clubBadgeClass = clubLevel === 'gold' ? 'club-badge club-badge-gold' : (clubLevel === 'silver' ? 'club-badge club-badge-silver' : '');
-    var clubBadgeText = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
     var role = (profile && profile.role) || 'candidate';
+    var clubVerified = profile && profile.club_membership_status === 'verified';
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
     html += '<p class="greeting">Welcome back</p>';
     html += '<p class="user-name">' + escapeHtml(name) + '</p>';
     html += '<div class="welcome-badges">';
-    if (clubBadgeClass && clubBadgeText) {
-      html += '<span class="' + clubBadgeClass + '">' + escapeHtml(clubBadgeText) + '</span>';
-    } else {
-      html += '<span class="role-badge">Club member</span>';
-    }
+    html += '<span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + (clubVerified ? 'Club member' : 'Unverified') + '</span>';
     html += '</div>';
     if ((role === 'employer' || role === 'admin') && profile && profile.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
@@ -73,7 +69,7 @@
     html += '</div>';
     html += '<div class="nav-cards">';
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="club-services"><span>Club services</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="club-services"><span>HR</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="instruction"><span>' + escapeHtml(((window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TITLE) ? window.HR_CONFIG.INSTRUCTION_TITLE : 'Instruction')) + '</span><span class="arrow">›</span></button>';
     var webAppUrl = (window.HR_CONFIG && window.HR_CONFIG.WEB_APP_URL) ? (window.HR_CONFIG.WEB_APP_URL + '').trim() : '';
     if (webAppUrl && typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
@@ -110,7 +106,7 @@
     var applicationsToMy = (counts.applications_to_my_vacancies | 0) || 0;
     function badge(n) { return n > 0 ? '<span class="nav-badge">' + (n > 99 ? '99+' : n) + '</span>' : ''; }
     var html = '<div class="screen club-services">';
-    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Club services</h1></div>';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">HR</h1></div>';
     html += '<details class="hr-service-block" open>';
     var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : '';
     html += '<summary class="hr-service-summary">' + escapeHtml(appTitle || 'HR Service CFO Club') + '</summary>';
@@ -159,16 +155,15 @@
     var nameEmpty = !name || name === '—';
     if (nameEmpty) name = 'Имя не указано';
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : 'Club member'));
+    var clubVerified = p.club_membership_status === 'verified';
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
-    var clubLevel = (p.club_member_level || '').toLowerCase();
-    var clubLabel = clubLevel === 'gold' ? 'Gold' : (clubLevel === 'silver' ? 'Silver' : '');
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
     html += '<div class="profile-card">';
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
-    if (clubLabel) html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="club-badge ' + (clubLevel === 'gold' ? 'club-badge-gold' : 'club-badge-silver') + '">' + escapeHtml(clubLabel) + ' member</span></div></div>';
+    html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + (clubVerified ? 'Club member' : 'Unverified') + '</span></div></div>';
     if (p.role === 'employer' && p.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
       var employerTypeLabel = employerTypeLabels[p.employer_type] || p.employer_type;
@@ -183,7 +178,7 @@
     html += '<div class="field"><div class="field-label">Tags</div><div class="field-value">' + escapeHtml(p.hr_tags || '—') + '</div></div>';
     html += '</div>';
     html += '<p class="section-label">Edit</p>';
-    html += '<button type="button" class="nav-card" data-screen="profile-edit"><span>Edit LinkedIn</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="profile-edit"><span>Edit profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
     return html;
   }
@@ -312,6 +307,10 @@
     vacancies = ensureArray(vacancies);
     appliedIds = appliedIds || {};
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Vacancies</h1></div>';
+    html += '<div class="form-card" style="margin-bottom:10px;">';
+    html += '<label class="field-label" for="vacancies-status-filter">Status</label>';
+    html += '<select id="vacancies-status-filter"><option value="open"' + (vacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (vacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select>';
+    html += '</div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
       html += '<p class="vacancies-hint">Если вакансия создана в админ-панели — привяжите её к категории <strong>Public</strong> или включите <strong>Club badge</strong> в профиле пользователя.</p>';
@@ -337,6 +336,10 @@
   function renderMyVacanciesList(list) {
     list = ensureArray(list);
     var html = '<div class="screen" id="my-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My vacancies</h1></div>';
+    html += '<div class="form-card" style="margin-bottom:10px;">';
+    html += '<label class="field-label" for="my-vacancies-status-filter">Status</label>';
+    html += '<select id="my-vacancies-status-filter"><option value=""' + (myVacanciesStatusFilter === '' ? ' selected' : '') + '>All</option><option value="open"' + (myVacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (myVacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select>';
+    html += '</div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
     } else {
@@ -632,6 +635,20 @@
     });
     if (el) {
       // role is set in admin
+    }
+    var vacanciesStatusEl = document.getElementById('vacancies-status-filter');
+    if (vacanciesStatusEl) {
+      vacanciesStatusEl.addEventListener('change', function () {
+        vacanciesStatusFilter = this.value || 'open';
+        goTo('vacancies');
+      });
+    }
+    var myVacanciesStatusEl = document.getElementById('my-vacancies-status-filter');
+    if (myVacanciesStatusEl) {
+      myVacanciesStatusEl.addEventListener('change', function () {
+        myVacanciesStatusFilter = this.value || '';
+        goTo('my-vacancies');
+      });
     }
     var offerCb = document.getElementById('offer-accept-cb');
     var offerBtn = document.getElementById('offer-accept-btn');
@@ -1133,7 +1150,7 @@
       return;
     }
     if (screen === 'vacancies') {
-      Promise.all([ window.HR_API.get('/vacancies'), window.HR_API.get('/applications/me') ]).then(function (arr) {
+      Promise.all([ window.HR_API.get('/vacancies?status=' + encodeURIComponent(vacanciesStatusFilter || 'open')), window.HR_API.get('/applications/me') ]).then(function (arr) {
         var list = ensureArray(arr && arr[0] !== undefined ? arr[0] : []);
         var applications = ensureArray(arr && arr[1] !== undefined ? arr[1] : []);
         var appliedIds = {};
@@ -1147,7 +1164,9 @@
       return;
     }
     if (screen === 'my-vacancies') {
-      window.HR_API.get('/vacancies/me').then(function (raw) {
+      var path = '/vacancies/me';
+      if (myVacanciesStatusFilter) path += '?status=' + encodeURIComponent(myVacanciesStatusFilter);
+      window.HR_API.get(path).then(function (raw) {
         lastMyVacanciesList = ensureArray(raw);
         setContent(renderMyVacanciesList(lastMyVacanciesList));
       }).catch(function (e) {
@@ -1313,6 +1332,15 @@
   }
 
   function init() {
+    try {
+      var root = document.documentElement;
+      var cfg = window.HR_CONFIG || {};
+      if (cfg.BRAND_PRIMARY) root.style.setProperty('--hr-primary', cfg.BRAND_PRIMARY);
+      if (cfg.BRAND_ACCENT) root.style.setProperty('--hr-accent', cfg.BRAND_ACCENT);
+      if (cfg.BRAND_BG) root.style.setProperty('--hr-bg', cfg.BRAND_BG);
+      if (cfg.BRAND_CARD_BG) root.style.setProperty('--hr-card-bg', cfg.BRAND_CARD_BG);
+    } catch (e) {}
+
     var tg = window.Telegram && window.Telegram.WebApp;
     if (tg) {
       document.body.classList.add('tg-webapp');
