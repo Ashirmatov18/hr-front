@@ -39,10 +39,10 @@
 
 body.tg-webapp {
   --hr-bg: var(--tg-theme-bg-color, #f5f7fb);
-  --hr-surface: var(--tg-theme-secondary-bg-color, #ffffff);
+  --hr-surface: #ffffff;
   --hr-primary: var(--tg-theme-button-color, #1d3f8f);
-  --hr-text: var(--tg-theme-text-color, #111827);
-  --hr-text-muted: var(--tg-theme-hint-color, #667085);
+  --hr-text: #111827;
+  --hr-text-muted: #667085;
 }
 
 * {
@@ -67,8 +67,8 @@ body {
 #app-content {
   min-height: 100vh;
   padding: clamp(16px, 3.2vw, 24px);
-  padding-top: clamp(16px, 3.5vw, 24px);
-  padding-bottom: clamp(24px, 5.5vw, 36px);
+  padding-top: clamp(22px, 4.5vw, 30px);
+  padding-bottom: clamp(32px, 7vw, 48px);
   animation: fade-in 0.22s ease-out;
 }
 
@@ -152,15 +152,15 @@ body {
 .screen {
   max-width: 440px;
   margin: 0 auto;
-  padding-top: 8px;
-  padding-bottom: 18px;
+  padding-top: 14px;
+  padding-bottom: 30px;
 }
 
 .screen-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .back-btn {
@@ -191,6 +191,35 @@ body {
   font-size: clamp(20px, 5vw, 24px);
   letter-spacing: -0.02em;
   font-weight: 700;
+}
+
+/* Keep readable text colors regardless of Telegram theme */
+.screen,
+.profile-card,
+.form-card,
+.content-card,
+.list-card,
+.list-items li,
+.field-value,
+.item-title,
+.vacancy-content,
+.chat-msg,
+.chat-msg-text,
+.chat-title {
+  color: var(--hr-text);
+}
+
+.item-meta,
+.content-meta,
+.vacancy-meta,
+.vacancy-company,
+.profile-line,
+.match-status,
+.text-muted,
+.hint,
+.dev-login .hint,
+.mode-choice-hint {
+  color: var(--hr-text-muted);
 }
 
 .home .welcome-card {
@@ -881,15 +910,21 @@ body {
   margin-top: 14px;
 }
 
+.screen > .btn-back:last-child,
+.screen > .btn-full:last-child,
+.screen > .btn-primary:last-child {
+  margin-bottom: 8px;
+}
+
 @media (max-width: 420px) {
   #app-content {
-    padding-top: 14px;
-    padding-bottom: 28px;
+    padding-top: 18px;
+    padding-bottom: 34px;
   }
 
   .screen {
-    padding-top: 6px;
-    padding-bottom: 16px;
+    padding-top: 12px;
+    padding-bottom: 24px;
   }
 
   .home .welcome-card,
