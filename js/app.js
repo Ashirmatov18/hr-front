@@ -307,9 +307,9 @@
     vacancies = ensureArray(vacancies);
     appliedIds = appliedIds || {};
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Vacancies</h1></div>';
-    html += '<div class="form-card" style="margin-bottom:10px;">';
+    html += '<div class="form-card filter-card">';
     html += '<label class="field-label" for="vacancies-status-filter">Status</label>';
-    html += '<select id="vacancies-status-filter"><option value="open"' + (vacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (vacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select>';
+    html += '<div class="filter-group"><select id="vacancies-status-filter"><option value="open"' + (vacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (vacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select></div>';
     html += '</div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
@@ -336,9 +336,9 @@
   function renderMyVacanciesList(list) {
     list = ensureArray(list);
     var html = '<div class="screen" id="my-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">My vacancies</h1></div>';
-    html += '<div class="form-card" style="margin-bottom:10px;">';
+    html += '<div class="form-card filter-card">';
     html += '<label class="field-label" for="my-vacancies-status-filter">Status</label>';
-    html += '<select id="my-vacancies-status-filter"><option value=""' + (myVacanciesStatusFilter === '' ? ' selected' : '') + '>All</option><option value="open"' + (myVacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (myVacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select>';
+    html += '<div class="filter-group"><select id="my-vacancies-status-filter"><option value=""' + (myVacanciesStatusFilter === '' ? ' selected' : '') + '>All</option><option value="open"' + (myVacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (myVacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select></div>';
     html += '</div>';
     if (!list || list.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
