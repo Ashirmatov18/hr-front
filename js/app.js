@@ -76,7 +76,8 @@
       html += '<button type="button" class="nav-card" id="nav-web-version"><span>Web version</span><span class="arrow">›</span></button>';
     }
     var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : 'HR Ecosystem';
-    html += '<p class="app-build">' + escapeHtml(appTitle) + ' · Build 2024.02.24</p>';
+    var appBuild = (window.HR_CONFIG && window.HR_CONFIG.APP_BUILD) ? (window.HR_CONFIG.APP_BUILD + '').trim() : '2024.02.24';
+    html += '<p class="app-build">' + escapeHtml(appTitle) + ' · Build ' + escapeHtml(appBuild) + '</p>';
     html += '</div></div>';
     return html;
   }
