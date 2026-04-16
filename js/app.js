@@ -1493,25 +1493,22 @@
     var authPromise = (window.HR_AUTH.tryAuthFromWidgetRedirect && window.HR_AUTH.tryAuthFromWidgetRedirect()) || Promise.resolve(false);
     authPromise.then(function (handled) {
       if (handled) return;
-      var savedToken = window.HR_API.getToken && window.HR_API.getToken();
       var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
+      // In Telegram we always show the entry choice first: Continue with Telegram or Existing member via email.
+      if (inTelegram) {
+        setContent(renderTelegramEntryScreen());
+        return;
+      }
+      var savedToken = window.HR_API.getToken && window.HR_API.getToken();
       if (savedToken) {
         showLoading('Logging in...');
         window.HR_AUTH.ensureAuth().then(function (me) {
           handleAuthenticated(me);
         }).catch(function () {
           window.HR_API.setToken(null);
-          if (inTelegram) {
-            setContent(renderTelegramEntryScreen());
-            return;
-          }
           setContent(renderDevLogin());
           injectTelegramLoginWidget();
         });
-        return;
-      }
-      if (inTelegram) {
-        setContent(renderTelegramEntryScreen());
         return;
       }
       setContent(renderDevLogin());
