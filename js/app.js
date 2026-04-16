@@ -626,7 +626,6 @@
       html += '<div class="candidate-profile">';
       if (status) html += '<p class="profile-line"><strong>Status:</strong> ' + escapeHtml(status) + '</p>';
       if (telegramUsername) html += '<p class="profile-line"><strong>Telegram:</strong> @' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '</p>';
-      if (telegramId) html += '<p class="profile-line"><strong>Telegram ID:</strong> ' + escapeHtml(String(telegramId)) + '</p>';
       if (skills) html += '<p class="profile-line"><strong>Skills:</strong> ' + escapeHtml(skills) + '</p>';
       if (tags) html += '<p class="profile-line"><strong>Tags:</strong> ' + escapeHtml(tags) + '</p>';
       html += '</div>';
