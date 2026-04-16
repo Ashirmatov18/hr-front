@@ -2,6 +2,38 @@
  * Telegram Mini App auth: get initData, call backend /auth, store token.
  */
 (function () {
+  function publicPost(path, body) {
+    var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || window.location.origin;
+    var url = base.replace(/\/$/, '') + '/wp-json/hr/v1' + path;
+    var headers = { 'Content-Type': 'application/json' };
+    if (base.indexOf('ngrok') !== -1) headers['ngrok-skip-browser-warning'] = 'true';
+    return fetch(url, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(body || {}),
+    })
+      .then(function (res) {
+        return res.text().then(function (text) {
+          var data;
+          try {
+            data = text ? JSON.parse(text) : {};
+          } catch (e) {
+            if (text && text.trim().indexOf('<') === 0) {
+              throw new Error('Server returned HTML instead of JSON. Check API URL, CORS and reverse proxy config.');
+            }
+            throw new Error('Invalid server response: ' + (text ? text.substring(0, 100) : res.status));
+          }
+          if (!res.ok) {
+            var err = new Error(data.message || 'Request failed');
+            err.status = res.status;
+            err.data = data;
+            throw err;
+          }
+          return data;
+        });
+      });
+  }
+
   function getTelegramInitData() {
     if (typeof window.Telegram !== 'undefined' && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
       return window.Telegram.WebApp.initData;
@@ -21,41 +53,34 @@
     if (!initData) {
       return Promise.reject(new Error('Not opened in Telegram or initData missing'));
     }
-    var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || window.location.origin;
-    var url = base.replace(/\/$/, '') + '/wp-json/hr/v1/auth';
-    var headers = { 'Content-Type': 'application/json' };
-    if (base.indexOf('ngrok') !== -1) headers['ngrok-skip-browser-warning'] = 'true';
-    return fetch(url, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({ initData: initData }),
-    })
-      .then(function (res) {
-        return res.text().then(function (text) {
-          var data;
-          try {
-            data = text ? JSON.parse(text) : {};
-          } catch (e) {
-            if (text && text.trim().indexOf('<') === 0) {
-              throw new Error('Server returned HTML instead of JSON. Check: 1) API URL in config.js (e.g. ngrok URL), 2) CORS on backend, 3) ngrok — open the URL once in browser and confirm if it shows a warning.');
-            }
-            throw new Error('Invalid server response: ' + (text ? text.substring(0, 100) : res.status));
-          }
-          if (!res.ok) {
-            var err = new Error(data.message || 'Auth failed');
-            err.status = res.status;
-            err.data = data;
-            throw err;
-          }
-          return data;
-        });
-      })
+    return publicPost('/auth', { initData: initData })
       .then(function (data) {
         if (data.token) {
           window.HR_API.setToken(data.token);
         }
         return window.HR_API.get('/me').then(function (me) { return me; });
       });
+  }
+
+  function requestEmailLinkCode(email) {
+    return publicPost('/auth/email-link/request', { email: email || '' });
+  }
+
+  function confirmEmailLink(email, code) {
+    var initData = getTelegramInitData();
+    if (!initData) {
+      return Promise.reject(new Error('Open the mini app inside Telegram to link your account.'));
+    }
+    return publicPost('/auth/email-link/confirm', {
+      email: email || '',
+      code: code || '',
+      initData: initData,
+    }).then(function (data) {
+      if (data.token) {
+        window.HR_API.setToken(data.token);
+      }
+      return window.HR_API.get('/me').then(function (me) { return me; });
+    });
   }
 
   function isDevMode() {
@@ -165,6 +190,8 @@
     getTelegramInitData: getTelegramInitData,
     isTelegramWebView: isTelegramWebView,
     login: login,
+    requestEmailLinkCode: requestEmailLinkCode,
+    confirmEmailLink: confirmEmailLink,
     ensureAuth: ensureAuth,
     tryAuthFromWidgetRedirect: tryAuthFromWidgetRedirect,
     isDevMode: isDevMode,

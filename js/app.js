@@ -13,6 +13,8 @@
   var lastMatchesList = [];
   var vacanciesStatusFilter = 'open';
   var myVacanciesStatusFilter = '';
+  var emailLinkStep = 'start';
+  var emailLinkAddress = '';
 
   function showLoading(msg) {
     var el = document.getElementById('app-content');
@@ -96,6 +98,37 @@
     html += '</div>';
     html += '<button type="button" class="btn-back" data-screen="home">Back</button>';
     html += '</div>';
+    return html;
+  }
+
+  function renderTelegramEntryScreen() {
+    var html = '<div class="screen auth-choice">';
+    html += '<div class="form-card">';
+    html += '<h1 class="screen-title">Welcome</h1>';
+    html += '<p class="hint">Choose how you want to enter HR.</p>';
+    html += '<button type="button" class="btn-primary btn-full" id="telegram-login-btn">Continue with Telegram</button>';
+    html += '<button type="button" class="btn-secondary btn-full" id="existing-member-btn">I am already a club member</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderExistingMemberScreen() {
+    var html = '<div class="screen auth-choice">';
+    html += '<div class="screen-header"><button type="button" class="back-btn" id="existing-member-back">‹</button><h1 class="screen-title">Existing member</h1></div>';
+    html += '<div class="form-card">';
+    html += '<p class="hint">Enter the email you used in the club system. We will send a short verification code and then link your Telegram account to this profile.</p>';
+    html += '<label class="field-label">Email</label>';
+    html += '<input type="email" id="existing-member-email" value="' + escapeHtml(emailLinkAddress || '') + '" placeholder="name@example.com" ' + (emailLinkStep === 'confirm' ? 'readonly' : '') + ' />';
+    if (emailLinkStep === 'confirm') {
+      html += '<p class="hint">If this email exists in the club database, the verification code was sent. Check your inbox and enter the code below.</p>';
+      html += '<label class="field-label">Verification code</label>';
+      html += '<input type="text" id="existing-member-code" inputmode="numeric" maxlength="6" placeholder="6-digit code" />';
+      html += '<button type="button" class="btn-primary btn-full" id="existing-member-confirm-btn">Confirm and link Telegram</button>';
+      html += '<button type="button" class="btn-secondary btn-full" id="existing-member-resend-btn">Send code again</button>';
+    } else {
+      html += '<button type="button" class="btn-primary btn-full" id="existing-member-send-btn">Send verification code</button>';
+    }
+    html += '</div></div>';
     return html;
   }
 
@@ -564,7 +597,8 @@
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (x, i) {
-        var label = (x.candidate_name || '') + ' — ' + (x.resume && x.resume.title ? x.resume.title : 'Resume');
+        var tgUsername = x.telegram_username ? ' @' + x.telegram_username.replace(/^@+/, '') : '';
+        var label = (x.candidate_name || '') + tgUsername + ' — ' + (x.resume && x.resume.title ? x.resume.title : 'Resume');
         html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(label) + '</div>';
         html += '<button type="button" class="btn-sm btn-outline" data-all-candidates-view="' + i + '">View</button></li>';
       });
@@ -579,6 +613,8 @@
     var skills = item.candidate_skills || '';
     var tags = item.candidate_tags || '';
     var status = item.candidate_status || '';
+    var telegramUsername = item.telegram_username || '';
+    var telegramId = item.telegram_id || 0;
     var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="all-candidates">‹</button><h1 class="screen-title">Candidate</h1></div>';
     html += '<div class="content-card"><p class="content-meta">' + escapeHtml(item.candidate_name || '') + '</p>';
     if (resume && (resume.title || resume.content || resume.cv_url)) {
@@ -589,6 +625,8 @@
     if (skills || tags || status) {
       html += '<div class="candidate-profile">';
       if (status) html += '<p class="profile-line"><strong>Status:</strong> ' + escapeHtml(status) + '</p>';
+      if (telegramUsername) html += '<p class="profile-line"><strong>Telegram:</strong> @' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '</p>';
+      if (telegramId) html += '<p class="profile-line"><strong>Telegram ID:</strong> ' + escapeHtml(String(telegramId)) + '</p>';
       if (skills) html += '<p class="profile-line"><strong>Skills:</strong> ' + escapeHtml(skills) + '</p>';
       if (tags) html += '<p class="profile-line"><strong>Tags:</strong> ' + escapeHtml(tags) + '</p>';
       html += '</div>';
@@ -649,6 +687,93 @@
       myVacanciesStatusEl.addEventListener('change', function () {
         myVacanciesStatusFilter = this.value || '';
         goTo('my-vacancies');
+      });
+    }
+    var telegramLoginBtn = document.getElementById('telegram-login-btn');
+    if (telegramLoginBtn) {
+      telegramLoginBtn.addEventListener('click', function () {
+        telegramLoginBtn.disabled = true;
+        showLoading('Logging in...');
+        window.HR_AUTH.login().then(function (me) {
+          handleAuthenticated(me);
+        }).catch(function (e) {
+          showError(e.message || 'Auth failed', e);
+        });
+      });
+    }
+    var existingMemberBtn = document.getElementById('existing-member-btn');
+    if (existingMemberBtn) {
+      existingMemberBtn.addEventListener('click', function () {
+        emailLinkStep = 'start';
+        emailLinkAddress = '';
+        setContent(renderExistingMemberScreen());
+      });
+    }
+    var existingMemberBack = document.getElementById('existing-member-back');
+    if (existingMemberBack) {
+      existingMemberBack.addEventListener('click', function () {
+        setContent(renderTelegramEntryScreen());
+      });
+    }
+    var existingMemberSendBtn = document.getElementById('existing-member-send-btn');
+    if (existingMemberSendBtn) {
+      existingMemberSendBtn.addEventListener('click', function () {
+        var emailEl = document.getElementById('existing-member-email');
+        var email = emailEl ? (emailEl.value || '').trim() : '';
+        if (!email) {
+          alert('Enter your email.');
+          return;
+        }
+        existingMemberSendBtn.disabled = true;
+        window.HR_AUTH.requestEmailLinkCode(email).then(function () {
+          emailLinkAddress = email;
+          emailLinkStep = 'confirm';
+          setContent(renderExistingMemberScreen());
+        }).catch(function (e) {
+          existingMemberSendBtn.disabled = false;
+          alert((e && e.message) || 'Failed to send code');
+        });
+      });
+    }
+    var existingMemberResendBtn = document.getElementById('existing-member-resend-btn');
+    if (existingMemberResendBtn) {
+      existingMemberResendBtn.addEventListener('click', function () {
+        if (!emailLinkAddress) {
+          emailLinkStep = 'start';
+          setContent(renderExistingMemberScreen());
+          return;
+        }
+        existingMemberResendBtn.disabled = true;
+        window.HR_AUTH.requestEmailLinkCode(emailLinkAddress).then(function () {
+          setContent(renderExistingMemberScreen());
+        }).catch(function (e) {
+          existingMemberResendBtn.disabled = false;
+          alert((e && e.message) || 'Failed to send code');
+        });
+      });
+    }
+    var existingMemberConfirmBtn = document.getElementById('existing-member-confirm-btn');
+    if (existingMemberConfirmBtn) {
+      existingMemberConfirmBtn.addEventListener('click', function () {
+        var codeEl = document.getElementById('existing-member-code');
+        var code = codeEl ? (codeEl.value || '').trim() : '';
+        if (!emailLinkAddress) {
+          alert('Enter email first.');
+          return;
+        }
+        if (!code) {
+          alert('Enter the verification code.');
+          return;
+        }
+        existingMemberConfirmBtn.disabled = true;
+        showLoading('Linking account...');
+        window.HR_AUTH.confirmEmailLink(emailLinkAddress, code).then(function (me) {
+          handleAuthenticated(me);
+        }).catch(function (e) {
+          emailLinkStep = 'confirm';
+          setContent(renderExistingMemberScreen());
+          alert((e && e.message) || 'Failed to confirm code');
+        });
       });
     }
     var offerCb = document.getElementById('offer-accept-cb');
@@ -1332,6 +1457,19 @@
     return html;
   }
 
+  function handleAuthenticated(me) {
+    profile = me || profile;
+    try {
+      var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : '';
+      if (appTitle) document.title = appTitle;
+    } catch (e) {}
+    if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
+      setContent(renderOfferScreen());
+      return;
+    }
+    goTo('home');
+  }
+
   function init() {
     try {
       var root = document.documentElement;
@@ -1355,56 +1493,49 @@
     var authPromise = (window.HR_AUTH.tryAuthFromWidgetRedirect && window.HR_AUTH.tryAuthFromWidgetRedirect()) || Promise.resolve(false);
     authPromise.then(function (handled) {
       if (handled) return;
-      showLoading('Logging in...');
-      window.HR_AUTH.ensureAuth()
-        .then(function (me) {
-          profile = me || profile;
-          try {
-            var appTitle = (window.HR_CONFIG && window.HR_CONFIG.APP_TITLE) ? (window.HR_CONFIG.APP_TITLE + '').trim() : '';
-            if (appTitle) document.title = appTitle;
-          } catch (e) {}
-          if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
-            setContent(renderOfferScreen());
+      var savedToken = window.HR_API.getToken && window.HR_API.getToken();
+      var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
+      if (savedToken) {
+        showLoading('Logging in...');
+        window.HR_AUTH.ensureAuth().then(function (me) {
+          handleAuthenticated(me);
+        }).catch(function () {
+          window.HR_API.setToken(null);
+          if (inTelegram) {
+            setContent(renderTelegramEntryScreen());
             return;
           }
-          goTo('home');
-        })
-        .catch(function (e) {
-          var msg = e.message || 'Auth failed. Open this app from Telegram.';
-          if (e.data && e.data.message) msg = e.data.message;
-          var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
-          if (!inTelegram) {
+          setContent(renderDevLogin());
+          injectTelegramLoginWidget();
+        });
+        return;
+      }
+      if (inTelegram) {
+        setContent(renderTelegramEntryScreen());
+        return;
+      }
+      setContent(renderDevLogin());
+      injectTelegramLoginWidget();
+      var btn = document.getElementById('dev-token-submit');
+      var input = document.getElementById('dev-token-input');
+      if (btn && input) {
+        btn.addEventListener('click', function () {
+          var token = (input.value || '').trim();
+          if (!token) return;
+          window.HR_AUTH.setDevToken(token);
+          window.HR_API.setToken(token);
+          showLoading('Checking token...');
+          window.HR_API.get('/me').then(function (me) {
+            handleAuthenticated(me);
+          }).catch(function () {
+            window.HR_API.setToken(null);
+            window.HR_AUTH.setDevToken(null);
             setContent(renderDevLogin());
             injectTelegramLoginWidget();
-            var btn = document.getElementById('dev-token-submit');
-            var input = document.getElementById('dev-token-input');
-            if (btn && input) {
-              btn.addEventListener('click', function () {
-                var token = (input.value || '').trim();
-                if (!token) return;
-                window.HR_AUTH.setDevToken(token);
-                window.HR_API.setToken(token);
-                showLoading('Checking token...');
-                window.HR_API.get('/me').then(function (me) {
-                  profile = me;
-                  if (profile.offer_text && (profile.offer_text + '').trim() && !profile.offer_accepted) {
-                    setContent(renderOfferScreen());
-                    return;
-                  }
-                  goTo('home');
-                }).catch(function () {
-                  window.HR_API.setToken(null);
-                  window.HR_AUTH.setDevToken(null);
-                  setContent(renderDevLogin());
-                  injectTelegramLoginWidget();
-                  alert('Invalid or expired token.');
-                });
-              });
-            }
-            return;
-          }
-          showError(msg, e);
+            alert('Invalid or expired token.');
+          });
         });
+      }
     });
   }
 

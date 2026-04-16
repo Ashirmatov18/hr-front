@@ -5,7 +5,7 @@
   window.HR_CONFIG = {
     // App branding (UI labels)
     APP_TITLE: 'M&A CFO Club | HR',
-    APP_BUILD: '2026.04.15-v4',
+    APP_BUILD: '2026.04.14-premium-v2',
     INSTRUCTION_TITLE: 'Инструкция',
     // Text for "Instruction" screen (can be edited without code changes)
     INSTRUCTION_TEXT: '',
