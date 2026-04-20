@@ -48,6 +48,17 @@
     return 'candidate';
   }
 
+  function getClubMembershipLabel(p) {
+    p = p || {};
+    var status = (p.club_membership_status || '').toLowerCase();
+    var level = (p.club_member_level || '').toLowerCase();
+    if (status !== 'verified') return 'Unverified member';
+    if (level === 'silver') return 'Silver member';
+    if (level === 'gold') return 'Gold member';
+    if (level === 'platinum') return 'Platinum member';
+    return 'Verified member';
+  }
+
   function renderHome() {
     var name = 'User';
     if (profile) {
@@ -57,12 +68,13 @@
     }
     var role = (profile && profile.role) || 'candidate';
     var clubVerified = profile && profile.club_membership_status === 'verified';
+    var clubLabel = getClubMembershipLabel(profile || {});
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
     html += '<p class="greeting">Welcome back</p>';
     html += '<p class="user-name">' + escapeHtml(name) + '</p>';
     html += '<div class="welcome-badges">';
-    html += '<span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + (clubVerified ? 'Club member' : 'Unverified') + '</span>';
+    html += '<span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + escapeHtml(clubLabel) + '</span>';
     html += '</div>';
     if ((role === 'employer' || role === 'admin') && profile && profile.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
@@ -223,6 +235,7 @@
     if (nameEmpty) name = 'Имя не указано';
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : 'Club member'));
     var clubVerified = p.club_membership_status === 'verified';
+    var clubLabel = getClubMembershipLabel(p);
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
@@ -230,7 +243,7 @@
     html += '<div class="field"><div class="field-label">Name</div><div class="field-value">' + escapeHtml(name) + '</div></div>';
     if (nameEmpty) html += '<p class="profile-hint">Выйдите и зайдите снова из Telegram — имя подтянется из профиля.</p>';
     html += '<div class="field"><div class="field-label">Role</div><div class="field-value">' + escapeHtml(roleLabel) + '</div></div>';
-    html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + (clubVerified ? 'Club member' : 'Unverified') + '</span></div></div>';
+    html += '<div class="field"><div class="field-label">Club</div><div class="field-value"><span class="role-badge ' + (clubVerified ? 'role-badge-verified' : 'role-badge-unverified') + '">' + escapeHtml(clubLabel) + '</span></div></div>';
     if (p.role === 'employer' && p.employer_type) {
       var employerTypeLabels = { independent_hr: 'Independent HR', recruitment_agency: 'Recruitment agency', direct_employer: 'Direct employer', other: 'Other', startup: 'Startup', smb: 'SMB', enterprise: 'Enterprise' };
       var employerTypeLabel = employerTypeLabels[p.employer_type] || p.employer_type;
