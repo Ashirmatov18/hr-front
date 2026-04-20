@@ -1541,8 +1541,18 @@
     authPromise.then(function (handled) {
       if (handled) return;
       var inTelegram = window.HR_AUTH.getTelegramInitData && window.HR_AUTH.getTelegramInitData();
-      // In Telegram we always show the entry choice first: Continue with Telegram or Existing member via email.
       if (inTelegram) {
+        var tgSavedToken = window.HR_API.getToken && window.HR_API.getToken();
+        if (tgSavedToken) {
+          showLoading('Logging in...');
+          window.HR_AUTH.ensureAuth().then(function (me) {
+            handleAuthenticated(me);
+          }).catch(function () {
+            window.HR_API.setToken(null);
+            setContent(renderTelegramEntryScreen());
+          });
+          return;
+        }
         setContent(renderTelegramEntryScreen());
         return;
       }
