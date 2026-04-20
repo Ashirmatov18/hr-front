@@ -15,6 +15,7 @@
   var myVacanciesStatusFilter = '';
   var emailLinkStep = 'start';
   var emailLinkAddress = '';
+  var customUiButtons = [];
 
   function showLoading(msg) {
     var el = document.getElementById('app-content');
@@ -132,13 +133,24 @@
     return html;
   }
 
-  function renderClubServices(stats, counts) {
+  function renderClubServices(stats, counts, customButtons) {
     counts = counts || {};
+    customButtons = ensureArray(customButtons);
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var unread = (counts.unread_messages | 0) || 0;
     var pendingApproval = (counts.pending_approval_count | 0) || 0;
     var applicationsToMy = (counts.applications_to_my_vacancies | 0) || 0;
+    var generalButtons = customButtons.filter(function (x) {
+      return x && x.group === 'general' && x.label && x.type && x.value;
+    });
+    var employerButtons = customButtons.filter(function (x) {
+      return x && x.group === 'employer' && x.label && x.type && x.value;
+    });
     function badge(n) { return n > 0 ? '<span class="nav-badge">' + (n > 99 ? '99+' : n) + '</span>' : ''; }
+    function addNavCard(label, attrs, isFirst) {
+      var classes = 'nav-card' + (isFirst ? ' nav-card-first' : '');
+      return '<button type="button" class="' + classes + '" ' + attrs + '><span>' + escapeHtml(label) + '</span><span class="arrow">›</span></button>';
+    }
     var html = '<div class="screen club-services">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">HR</h1></div>';
     html += '<details class="hr-service-block" open>';
@@ -154,22 +166,43 @@
     html += '<div class="nav-cards">';
     var publicUrl = (window.HR_CONFIG && window.HR_CONFIG.PUBLIC_CHAT_URL) ? (window.HR_CONFIG.PUBLIC_CHAT_URL + '').trim() : '';
     var clubUrl = (window.HR_CONFIG && window.HR_CONFIG.CLUB_MEMBER_URL) ? (window.HR_CONFIG.CLUB_MEMBER_URL + '').trim() : '';
-    var hasExternal = !!(publicUrl || clubUrl);
+    var hasAnyCard = false;
     if (publicUrl) {
-      html += '<button type="button" class="nav-card nav-card-first" data-external-url="' + escapeHtml(publicUrl) + '"><span>Apply to public chat</span><span class="arrow">›</span></button>';
+      html += addNavCard('Apply to public chat', 'data-external-url="' + escapeHtml(publicUrl) + '"', !hasAnyCard);
+      hasAnyCard = true;
     }
     if (clubUrl) {
-      html += '<button type="button" class="nav-card ' + (publicUrl ? '' : 'nav-card-first') + '" data-external-url="' + escapeHtml(clubUrl) + '"><span>Apply to club member</span><span class="arrow">›</span></button>';
+      html += addNavCard('Apply to club member', 'data-external-url="' + escapeHtml(clubUrl) + '"', !hasAnyCard);
+      hasAnyCard = true;
     }
-    html += '<button type="button" class="nav-card ' + (hasExternal ? '' : 'nav-card-first') + '" data-screen="vacancies"><span>Open vacancies</span><span class="arrow">›</span></button>';
-    html += '<button type="button" class="nav-card" data-screen="resume"><span>Place candidacy</span><span class="arrow">›</span></button>';
+    html += addNavCard('Open vacancies', 'data-screen="vacancies"', !hasAnyCard);
+    hasAnyCard = true;
+    html += addNavCard('Place candidacy', 'data-screen="resume"', !hasAnyCard);
+    hasAnyCard = true;
     html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span>' + badge(unread) + '<span class="arrow">›</span></button>';
+
+    generalButtons.forEach(function (btn) {
+      if (btn.type === 'url') {
+        html += addNavCard(btn.label, 'data-external-url="' + escapeHtml(btn.value) + '"', !hasAnyCard);
+      } else {
+        html += addNavCard(btn.label, 'data-screen="' + escapeHtml(btn.value) + '"', !hasAnyCard);
+      }
+      hasAnyCard = true;
+    });
+
     if (isEmployer) {
       html += '<p class="section-label">Employer</p>';
       html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span>' + badge(applicationsToMy) + '<span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span>' + badge(pendingApproval) + '<span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
+      employerButtons.forEach(function (btn) {
+        if (btn.type === 'url') {
+          html += addNavCard(btn.label, 'data-external-url="' + escapeHtml(btn.value) + '"', false);
+        } else {
+          html += addNavCard(btn.label, 'data-screen="' + escapeHtml(btn.value) + '"', false);
+        }
+      });
     }
     html += '</div></details>';
     html += '</div>';
@@ -1263,14 +1296,16 @@
       Promise.all([
         window.HR_API.get('/me'),
         window.HR_API.get('/stats').catch(function () { return null; }),
-        window.HR_API.get('/me/counts').catch(function () { return {}; })
+        window.HR_API.get('/me/counts').catch(function () { return {}; }),
+        window.HR_API.get('/ui/buttons').catch(function () { return []; })
       ]).then(function (arr) {
         profile = arr[0] || profile;
         var stats = arr[1];
         var counts = arr[2] || {};
-        setContent(renderClubServices(stats, counts));
+        customUiButtons = ensureArray(arr[3]);
+        setContent(renderClubServices(stats, counts, customUiButtons));
       }).catch(function () {
-        setContent(renderClubServices(null, {}));
+        setContent(renderClubServices(null, {}, []));
       });
       return;
     }
