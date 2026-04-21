@@ -86,6 +86,9 @@
     html += '<button type="button" class="nav-card" data-screen="profile"><span>Profile</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>HR</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="instruction"><span>' + escapeHtml(((window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TITLE) ? window.HR_CONFIG.INSTRUCTION_TITLE : 'Instruction')) + '</span><span class="arrow">›</span></button>';
+    if (role === 'admin') {
+      html += '<button type="button" class="nav-card" data-screen="vip-check"><span>VIP check (test)</span><span class="arrow">›</span></button>';
+    }
     var webAppUrl = (window.HR_CONFIG && window.HR_CONFIG.WEB_APP_URL) ? (window.HR_CONFIG.WEB_APP_URL + '').trim() : '';
     if (webAppUrl && typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
       html += '<button type="button" class="nav-card" id="nav-web-version"><span>Web version</span><span class="arrow">›</span></button>';
@@ -141,6 +144,19 @@
     } else {
       html += '<button type="button" class="btn-primary btn-full" id="existing-member-send-btn">Send verification code</button>';
     }
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderVipCheckScreen() {
+    var html = '<div class="screen vip-check">';
+    html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">VIP check</h1></div>';
+    html += '<div class="form-card">';
+    html += '<p class="hint">Enter email to check VIP status from configured club table.</p>';
+    html += '<label class="field-label">Email</label>';
+    html += '<input type="email" id="vip-check-email" placeholder="name@example.com" />';
+    html += '<button type="button" class="btn-primary btn-full" id="vip-check-submit">Check VIP status</button>';
+    html += '<div id="vip-check-result" class="content-meta" style="margin-top:10px;">—</div>';
     html += '</div></div>';
     return html;
   }
@@ -821,6 +837,28 @@
         });
       });
     }
+    var vipCheckSubmitBtn = document.getElementById('vip-check-submit');
+    if (vipCheckSubmitBtn) {
+      vipCheckSubmitBtn.addEventListener('click', function () {
+        var emailEl = document.getElementById('vip-check-email');
+        var resultEl = document.getElementById('vip-check-result');
+        var email = emailEl ? (emailEl.value || '').trim() : '';
+        if (!email) {
+          if (resultEl) resultEl.textContent = 'Enter email.';
+          return;
+        }
+        vipCheckSubmitBtn.disabled = true;
+        if (resultEl) resultEl.textContent = 'Checking...';
+        window.HR_API.post('/vip/check-email', { email: email }).then(function (resp) {
+          vipCheckSubmitBtn.disabled = false;
+          var label = (resp && resp.label) ? resp.label : 'Unverified member';
+          if (resultEl) resultEl.textContent = 'Result: ' + label;
+        }).catch(function (e) {
+          vipCheckSubmitBtn.disabled = false;
+          if (resultEl) resultEl.textContent = 'Error: ' + ((e && e.message) || 'Request failed');
+        });
+      });
+    }
     var offerCb = document.getElementById('offer-accept-cb');
     var offerBtn = document.getElementById('offer-accept-btn');
     if (offerCb && offerBtn) {
@@ -1290,6 +1328,10 @@
     }
     if (screen === 'instruction') {
       setContent(renderInstruction());
+      return;
+    }
+    if (screen === 'vip-check') {
+      setContent(renderVipCheckScreen());
       return;
     }
     if (screen === 'profile') {
