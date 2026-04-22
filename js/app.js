@@ -52,14 +52,26 @@
     return (value || '').toString().trim().toLowerCase();
   }
 
+  function isClubVerified(p) {
+    p = p || {};
+    var status = normalizeMembershipStatus(p.club_membership_status);
+    var level = (p.club_member_level || '').toString().trim().toLowerCase();
+    var badge = !!p.club_badge;
+    if (status === 'verified') return true;
+    if (badge) return true;
+    if (level === 'silver' || level === 'gold' || level === 'platinum') return true;
+    return false;
+  }
+
   function getClubMembershipLabel(p) {
     p = p || {};
     var status = normalizeMembershipStatus(p.club_membership_status);
     var level = (p.club_member_level || '').toString().trim().toLowerCase();
-    if (status !== 'verified') return 'Unverified member';
+    if (!isClubVerified(p)) return 'Unverified member';
     if (level === 'silver') return 'Silver member';
     if (level === 'gold') return 'Gold member';
     if (level === 'platinum') return 'Platinum member';
+    if (status === 'verified') return 'Verified member';
     return 'Verified member';
   }
 
@@ -71,7 +83,7 @@
       name = (fn + ' ' + ln).trim() || (profile.display_name || '').trim() || profile.username || 'User';
     }
     var role = (profile && profile.role) || 'candidate';
-    var clubVerified = profile && normalizeMembershipStatus(profile.club_membership_status) === 'verified';
+    var clubVerified = isClubVerified(profile);
     var clubLabel = getClubMembershipLabel(profile || {});
     var html = '<div class="screen home">';
     html += '<div class="welcome-card">';
@@ -254,7 +266,7 @@
     var nameEmpty = !name || name === '—';
     if (nameEmpty) name = 'Имя не указано';
     var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : 'Club member'));
-    var clubVerified = normalizeMembershipStatus(p.club_membership_status) === 'verified';
+    var clubVerified = isClubVerified(p);
     var clubLabel = getClubMembershipLabel(p);
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
     var html = '<div class="screen profile">';
