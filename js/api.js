@@ -16,12 +16,19 @@
 
   function request(method, path, body) {
     var url = getBase() + path;
+    if (method === 'GET') {
+      url += (url.indexOf('?') === -1 ? '?' : '&') + '_hrts=' + Date.now();
+    }
     var base = (window.HR_CONFIG && window.HR_CONFIG.API_BASE_URL) || '';
     var isNgrok = base.indexOf('ngrok') !== -1;
     var opts = {
       method: method,
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     };
     if (isNgrok) {
