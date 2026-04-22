@@ -52,10 +52,19 @@
     return (value || '').toString().trim().toLowerCase();
   }
 
+  function normalizeMembershipLevel(value) {
+    var raw = (value || '').toString().trim().toLowerCase();
+    if (!raw) return '';
+    if (raw === 'platinum' || raw.indexOf('platinum') !== -1) return 'platinum';
+    if (raw === 'gold' || raw.indexOf('gold') !== -1) return 'gold';
+    if (raw === 'silver' || raw.indexOf('silver') !== -1) return 'silver';
+    return '';
+  }
+
   function isClubVerified(p) {
     p = p || {};
     var status = normalizeMembershipStatus(p.club_membership_status);
-    var level = (p.club_member_level || '').toString().trim().toLowerCase();
+    var level = normalizeMembershipLevel(p.club_member_level);
     var badge = !!p.club_badge;
     if (status === 'verified') return true;
     if (badge) return true;
@@ -66,11 +75,11 @@
   function getClubMembershipLabel(p) {
     p = p || {};
     var status = normalizeMembershipStatus(p.club_membership_status);
-    var level = (p.club_member_level || '').toString().trim().toLowerCase();
+    var level = normalizeMembershipLevel(p.club_member_level);
     if (!isClubVerified(p)) return 'Unverified member';
-    if (level === 'silver') return 'Silver member';
-    if (level === 'gold') return 'Gold member';
-    if (level === 'platinum') return 'Platinum member';
+    if (level === 'silver') return 'Silver subscription';
+    if (level === 'gold') return 'Gold subscription';
+    if (level === 'platinum') return 'Platinum subscription';
     if (status === 'verified') return 'Verified member';
     return 'Verified member';
   }
