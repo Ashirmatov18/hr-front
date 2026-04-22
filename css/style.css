@@ -64,21 +64,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.top-test-label {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
-  text-align: center;
-  padding: 8px 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #ffffff;
-  background: linear-gradient(135deg, #be123c 0%, #e11d48 100%);
-  box-shadow: 0 8px 20px rgba(190, 18, 60, 0.25);
-}
-
 #app-content {
   min-height: 100vh;
   padding: clamp(16px, 3.2vw, 24px);
