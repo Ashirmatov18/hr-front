@@ -10,9 +10,22 @@
   var lastMyVacanciesList = [];
   var lastPendingApprovalList = [];
   var lastAllCandidatesList = [];
+  var lastAdminVacanciesList = [];
+  var lastAdminMatchesList = [];
+  var lastAdminCandidateSearchList = [];
+  var lastAdminVacancySearchList = [];
+  var lastAdminLinkedVacancyList = [];
   var lastMatchesList = [];
+  var lastVacancyDetailMatches = [];
+  var lastVacancyDetailBackScreen = 'my-vacancies';
   var vacanciesStatusFilter = 'open';
+  var vacanciesCategoryFilter = '';
   var myVacanciesStatusFilter = '';
+  var adminVacanciesStatusFilter = '';
+  var adminCandidateSearchQuery = '';
+  var adminVacancySearchQuery = '';
+  var adminSelectedVacancyId = 0;
+  var adminSelectedCandidateId = 0;
   var emailLinkStep = 'start';
   var emailLinkAddress = '';
   var customUiButtons = [];
@@ -84,6 +97,113 @@
     return 'Verified member';
   }
 
+  function getOpenToWorkLabel(value) {
+    var status = (value || '').toString().trim().toLowerCase();
+    var map = {
+      off: 'Off',
+      not_looking: 'Off',
+      active: 'Active',
+      active_search: 'Active',
+      exploring: 'Exploring',
+      passive: 'Exploring',
+      always_open: 'Always open to opportunities'
+    };
+    return map[status] || 'Off';
+  }
+
+  function getOpenToWorkValue(p) {
+    p = p || {};
+    var value = (p.open_to_work || p.hr_status || '').toString().trim().toLowerCase();
+    if (value === 'active_search') return 'active';
+    if (value === 'passive') return 'exploring';
+    if (value === 'not_looking') return 'off';
+    if (value === 'always_open') return 'always_open';
+    if (value === 'active' || value === 'exploring' || value === 'off') return value;
+    return 'off';
+  }
+
+  function getVacancyStatusLabel(value) {
+    var status = (value || '').toString().trim().toLowerCase();
+    var map = {
+      open: 'Contract signed',
+      new_vacancy: 'NEW vacancy',
+      contract_in_progress: 'Contract in progress',
+      contract_signed: 'Contract signed',
+      candidates_sent: 'Candidates sent',
+      final_candidate: 'Final candidate',
+      offer_signed: 'Offer signed',
+      closed: 'Closed',
+      cancelled: 'Cancelled'
+    };
+    return map[status] || (value || 'NEW vacancy');
+  }
+
+  function isVacancyClosed(value) {
+    value = (value || '').toString().trim().toLowerCase();
+    return value === 'offer_signed' || value === 'closed' || value === 'cancelled';
+  }
+
+  function getMatchStatusLabel(value) {
+    var status = (value || '').toString().trim().toLowerCase();
+    var map = {
+      pending: 'Pending',
+      pending_employer: 'Pending employer',
+      confirmed: 'Confirmed',
+      offer_made: 'Offer made',
+      dialog_closed: 'Dialog closed',
+      rejected: 'Rejected',
+      cv_sent: 'CV Sent',
+      offer_sent: 'Offer sent',
+      offer_approved: 'Offer approved',
+      offer_rejected: 'Offer rejected',
+      hired: 'Hired',
+      probation_passed: 'Probation passed',
+      invoice_received: 'Invoice received',
+      invoice_paid: 'Invoice paid',
+      close_the_deal: 'Close the deal'
+    };
+    return map[status] || (value || 'Pending');
+  }
+
+  function getVacancyStatusOptions() {
+    return [
+      ['new_vacancy', 'NEW vacancy'],
+      ['contract_in_progress', 'Contract in progress'],
+      ['contract_signed', 'Contract signed'],
+      ['candidates_sent', 'Candidates sent'],
+      ['final_candidate', 'Final candidate'],
+      ['offer_signed', 'Offer signed'],
+      ['closed', 'Closed'],
+      ['cancelled', 'Cancelled']
+    ];
+  }
+
+  function getMatchStatusOptions() {
+    return [
+      ['pending', 'Pending'],
+      ['pending_employer', 'Pending employer'],
+      ['confirmed', 'Confirmed'],
+      ['offer_made', 'Offer made'],
+      ['dialog_closed', 'Dialog closed'],
+      ['cv_sent', 'CV Sent'],
+      ['offer_sent', 'Offer sent'],
+      ['offer_approved', 'Offer approved'],
+      ['offer_rejected', 'Offer rejected'],
+      ['hired', 'Hired'],
+      ['probation_passed', 'Probation passed'],
+      ['invoice_received', 'Invoice received'],
+      ['invoice_paid', 'Invoice paid'],
+      ['close_the_deal', 'Close the deal'],
+      ['rejected', 'Rejected']
+    ];
+  }
+
+  function getCategoryLabel(v) {
+    var categories = ensureArray(v && v.categories);
+    if (!categories.length) return '';
+    return categories.map(function (cat) { return cat.name || cat.slug || cat.id; }).filter(Boolean).join(', ');
+  }
+
   function renderHome() {
     var name = 'User';
     if (profile) {
@@ -112,7 +232,7 @@
     html += '<button type="button" class="nav-card" data-screen="club-services"><span>HR</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="instruction"><span>' + escapeHtml(((window.HR_CONFIG && window.HR_CONFIG.INSTRUCTION_TITLE) ? window.HR_CONFIG.INSTRUCTION_TITLE : 'Instruction')) + '</span><span class="arrow">›</span></button>';
     if (role === 'admin') {
-      html += '<button type="button" class="nav-card" data-screen="vip-check"><span>VIP check (test)</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="vip-check"><span>VIP check</span><span class="arrow">›</span></button>';
     }
     var webAppUrl = (window.HR_CONFIG && window.HR_CONFIG.WEB_APP_URL) ? (window.HR_CONFIG.WEB_APP_URL + '').trim() : '';
     if (webAppUrl && typeof window.Telegram !== 'undefined' && window.Telegram.WebApp) {
@@ -189,6 +309,7 @@
   function renderClubServices(stats, counts, customButtons) {
     counts = counts || {};
     customButtons = ensureArray(customButtons);
+    var isAdmin = (profile && profile.role === 'admin');
     var isEmployer = (profile && (profile.role === 'employer' || profile.role === 'admin'));
     var unread = (counts.unread_messages | 0) || 0;
     var pendingApproval = (counts.pending_approval_count | 0) || 0;
@@ -230,8 +351,9 @@
     }
     html += addNavCard('Open vacancies', 'data-screen="vacancies"', !hasAnyCard);
     hasAnyCard = true;
-    html += addNavCard('Place candidacy', 'data-screen="resume"', !hasAnyCard);
+    html += addNavCard('Place vacancy', 'data-screen="create-vacancy"', !hasAnyCard);
     hasAnyCard = true;
+    html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span>' + badge(applicationsToMy) + '<span class="arrow">›</span></button>';
     html += '<button type="button" class="nav-card" data-screen="matches"><span>My matches</span>' + badge(unread) + '<span class="arrow">›</span></button>';
 
     generalButtons.forEach(function (btn) {
@@ -245,8 +367,6 @@
 
     if (isEmployer) {
       html += '<p class="section-label">Employer</p>';
-      html += '<button type="button" class="nav-card" data-screen="my-vacancies"><span>My vacancies</span>' + badge(applicationsToMy) + '<span class="arrow">›</span></button>';
-      html += '<button type="button" class="nav-card" data-screen="create-vacancy"><span>Create vacancy</span><span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="pending-approval"><span>Candidates</span>' + badge(pendingApproval) + '<span class="arrow">›</span></button>';
       html += '<button type="button" class="nav-card" data-screen="opened-resumes"><span>Opened resumes</span><span class="arrow">›</span></button>';
       employerButtons.forEach(function (btn) {
@@ -256,6 +376,18 @@
           html += addNavCard(btn.label, 'data-screen="' + escapeHtml(btn.value) + '"', false);
         }
       });
+    }
+    if (isAdmin) {
+      html += '<p class="section-label">Admin HR</p>';
+      if (stats && stats.open_to_work_counts) {
+        html += '<div class="club-stats admin-stats">';
+        html += '<span class="club-stat"><strong>' + ((stats.open_to_work_counts.active || 0) + (stats.open_to_work_counts.exploring || 0) + (stats.open_to_work_counts.always_open || 0)) + '</strong> open to work</span>';
+        html += ' <span class="club-stat"><strong>' + ((stats.vacancy_status_counts && stats.vacancy_status_counts.offer_signed) || 0) + '</strong> offers signed</span>';
+        html += '</div>';
+      }
+      html += '<button type="button" class="nav-card" data-screen="admin-vacancies"><span>Vacancies</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="admin-candidates"><span>Candidates</span><span class="arrow">›</span></button>';
+      html += '<button type="button" class="nav-card" data-screen="admin-matches"><span>Matches</span>' + badge(unread) + '<span class="arrow">›</span></button>';
     }
     html += '</div></details>';
     html += '</div>';
@@ -274,10 +406,11 @@
     var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || (p.display_name || '').trim() || p.user_login || '—';
     var nameEmpty = !name || name === '—';
     if (nameEmpty) name = 'Имя не указано';
-    var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : 'Club member'));
     var clubVerified = isClubVerified(p);
     var clubLabel = getClubMembershipLabel(p);
+    var roleLabel = (p.role === 'employer' ? 'Employer' : (p.role === 'admin' ? 'Admin' : (clubVerified ? 'Club member' : 'Not verified')));
     var linkedinDisplay = p.linkedin_skipped ? 'I don\'t have LinkedIn' : (p.linkedin_url ? p.linkedin_url : '—');
+    var location = [p.location_city || '', p.location_country || ''].filter(Boolean).join(', ') || '—';
     var html = '<div class="screen profile">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="home">‹</button><h1 class="screen-title">Profile</h1></div>';
     html += '<div class="profile-card">';
@@ -290,16 +423,26 @@
       var employerTypeLabel = employerTypeLabels[p.employer_type] || p.employer_type;
       html += '<div class="field"><div class="field-label">Employer type</div><div class="field-value">' + escapeHtml(employerTypeLabel) + '</div></div>';
     }
-    html += '<div class="field"><div class="field-label">Status</div><div class="field-value">' + escapeHtml(p.hr_status || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">Open to work</div><div class="field-value">' + escapeHtml(p.open_to_work_label || getOpenToWorkLabel(p.open_to_work || p.hr_status)) + '</div></div>';
+    html += '<div class="field"><div class="field-label">HR status</div><div class="field-value">' + escapeHtml(p.hr_approval_label || (p.hr_approved ? 'Approved by HR' : 'Not approved by HR')) + '</div></div>';
+    html += '<div class="field"><div class="field-label">Title</div><div class="field-value">' + escapeHtml(p.hr_title || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">Location</div><div class="field-value">' + escapeHtml(location) + '</div></div>';
     html += '<div class="field"><div class="field-label">LinkedIn</div><div class="field-value">';
     if (p.linkedin_url) html += '<a href="' + escapeHtml(p.linkedin_url) + '" target="_blank" rel="noopener">' + escapeHtml(p.linkedin_url) + '</a>';
     else html += escapeHtml(linkedinDisplay);
     html += '</div></div>';
     html += '<div class="field"><div class="field-label">Skills</div><div class="field-value">' + escapeHtml(p.hr_skills || '—') + '</div></div>';
     html += '<div class="field"><div class="field-label">Tags</div><div class="field-value">' + escapeHtml(p.hr_tags || '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">About</div><div class="field-value">' + (p.hr_about ? escapeHtml(p.hr_about).replace(/\n/g, '<br>') : '—') + '</div></div>';
+    html += '<div class="field"><div class="field-label">CV</div><div class="field-value">';
+    if (p.cv_url) html += '<a href="' + escapeHtml(p.cv_url) + '" target="_blank" rel="noopener" class="link-cv">Download CV</a>';
+    else html += '<span class="text-muted">No file attached</span>';
+    html += '</div></div>';
+    if (p.profile_updated_at) html += '<div class="field"><div class="field-label">Updated</div><div class="field-value">' + escapeHtml(p.profile_updated_at) + '</div></div>';
     html += '</div>';
     html += '<p class="section-label">Edit</p>';
     html += '<button type="button" class="nav-card" data-screen="profile-edit"><span>Edit profile</span><span class="arrow">›</span></button>';
+    html += '<button type="button" class="nav-card" data-screen="resume"><span>Edit CV file</span><span class="arrow">›</span></button>';
     html += '<button type="button" class="btn-back" data-screen="home">Back</button></div>';
     return html;
   }
@@ -333,6 +476,7 @@
 
   function renderProfileEdit() {
     var p = profile || {};
+    var openToWork = getOpenToWorkValue(p);
     var html = '<div class="screen profile-edit">';
     html += '<div class="screen-header"><button type="button" class="back-btn" data-screen="profile">‹</button><h1 class="screen-title">Edit profile</h1></div>';
     html += '<div class="form-card">';
@@ -340,10 +484,20 @@
     html += '<input type="text" id="profile-first-name" value="' + escapeHtml(p.first_name || '') + '" placeholder="First name" />';
     html += '<label class="field-label">Last name</label>';
     html += '<input type="text" id="profile-last-name" value="' + escapeHtml(p.last_name || '') + '" placeholder="Last name" />';
+    html += '<label class="field-label">Open to work</label>';
+    html += '<select id="profile-open-to-work"><option value="off"' + (openToWork === 'off' ? ' selected' : '') + '>Off</option><option value="active"' + (openToWork === 'active' ? ' selected' : '') + '>Active</option><option value="exploring"' + (openToWork === 'exploring' ? ' selected' : '') + '>Exploring</option><option value="always_open"' + (openToWork === 'always_open' ? ' selected' : '') + '>Always open to opportunities</option></select>';
+    html += '<label class="field-label">Title</label>';
+    html += '<input type="text" id="profile-hr-title" value="' + escapeHtml(p.hr_title || '') + '" placeholder="e.g. CFO, Product manager" />';
     html += '<label class="field-label">Skills</label>';
     html += '<input type="text" id="profile-skills" value="' + escapeHtml(p.hr_skills || '') + '" placeholder="e.g. PHP, JavaScript, project management" />';
     html += '<label class="field-label">Tags</label>';
     html += '<input type="text" id="profile-tags" value="' + escapeHtml(p.hr_tags || '') + '" placeholder="e.g. remote, startup, team lead" />';
+    html += '<label class="field-label">Country</label>';
+    html += '<input type="text" id="profile-location-country" value="' + escapeHtml(p.location_country || '') + '" placeholder="Country" />';
+    html += '<label class="field-label">City</label>';
+    html += '<input type="text" id="profile-location-city" value="' + escapeHtml(p.location_city || '') + '" placeholder="City" />';
+    html += '<label class="field-label">About</label>';
+    html += '<textarea id="profile-about" rows="5" placeholder="Experience, focus, preferred opportunities">' + escapeHtml(p.hr_about || '') + '</textarea>';
     html += '<label class="field-label">LinkedIn profile URL</label>';
     html += '<input type="url" id="profile-linkedin-url" value="' + escapeHtml(p.linkedin_url || '') + '" placeholder="https://linkedin.com/in/..." />';
     html += '<label class="checkbox-label" style="margin-top:10px;"><input type="checkbox" id="profile-linkedin-skip" ' + (p.linkedin_skipped ? 'checked' : '') + ' /> I don\'t have LinkedIn</label>';
@@ -428,9 +582,22 @@
     vacancies = ensureArray(vacancies);
     appliedIds = appliedIds || {};
     var html = '<div class="screen" id="vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Vacancies</h1></div>';
+    html += '<div class="nav-cards compact-actions"><button type="button" class="nav-card" data-screen="matches"><span>My matches</span><span class="arrow">›</span></button><button type="button" class="nav-card" data-screen="create-vacancy"><span>Place vacancy</span><span class="arrow">›</span></button></div>';
     html += '<div class="form-card filter-card">';
     html += '<label class="field-label" for="vacancies-status-filter">Status</label>';
-    html += '<div class="filter-group"><select id="vacancies-status-filter"><option value="open"' + (vacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (vacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select></div>';
+    html += '<div class="filter-group"><select id="vacancies-status-filter"><option value="open"' + (vacanciesStatusFilter === 'open' ? ' selected' : '') + '>Active</option><option value="closed"' + (vacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option></select></div>';
+    var categories = {};
+    ensureArray(lastVacanciesList.length ? lastVacanciesList : vacancies).forEach(function (v) {
+      ensureArray(v.categories).forEach(function (cat) {
+        if (cat && cat.id) categories[cat.id] = cat.name || cat.slug || String(cat.id);
+      });
+    });
+    html += '<label class="field-label" for="vacancies-category-filter">Category</label>';
+    html += '<div class="filter-group"><select id="vacancies-category-filter"><option value=""' + (vacanciesCategoryFilter === '' ? ' selected' : '') + '>All</option>';
+    Object.keys(categories).sort(function (a, b) { return categories[a].localeCompare(categories[b]); }).forEach(function (id) {
+      html += '<option value="' + escapeHtml(id) + '"' + (String(vacanciesCategoryFilter) === String(id) ? ' selected' : '') + '>' + escapeHtml(categories[id]) + '</option>';
+    });
+    html += '</select></div>';
     html += '</div>';
     if (!vacancies || vacancies.length === 0) {
       html += '<div class="empty-state">No vacancies yet.</div>';
@@ -440,6 +607,9 @@
       vacancies.forEach(function (v, i) {
         var applied = appliedIds[v.id];
         html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(v.title || '') + '</div>';
+        if (v.status || v.status_label) html += '<div class="item-meta"><span class="vacancy-status ' + (isVacancyClosed(v.status) ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(v.status_label || getVacancyStatusLabel(v.status)) + '</span></div>';
+        var categoryLabel = getCategoryLabel(v);
+        if (categoryLabel) html += '<div class="item-meta">' + escapeHtml(categoryLabel) + '</div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-view-vacancy="' + i + '">View</button>';
         if (applied) {
           html += '<span class="badge-applied">Applied</span>';
@@ -466,10 +636,10 @@
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (v, i) {
-        var isClosed = (v.status || '').toLowerCase() === 'closed';
+        var isClosed = isVacancyClosed(v.status);
         var modStatus = (v.moderation_status || '').toLowerCase();
         var statusClass = isClosed ? 'vacancy-status vacancy-status-closed' : 'vacancy-status vacancy-status-open';
-        var statusLabel = isClosed ? 'Closed' : 'Open';
+        var statusLabel = v.status_label || getVacancyStatusLabel(v.status);
         var modLabel = modStatus === 'pending_review' ? 'Pending review' : (modStatus === 'rejected' ? 'Rejected' : (modStatus === 'published' ? 'Published' : ''));
         var modClass = modStatus === 'pending_review' ? 'moderation-status moderation-pending' : (modStatus === 'rejected' ? 'moderation-status moderation-rejected' : (modStatus === 'published' ? 'moderation-status moderation-published' : ''));
         var appCount = (v.applications_count | 0);
@@ -485,16 +655,216 @@
     return html;
   }
 
+  function findAdminVacancy(id) {
+    id = parseInt(id, 10) || 0;
+    var all = ensureArray(lastAdminVacanciesList).concat(ensureArray(lastAdminVacancySearchList)).concat(ensureArray(lastAdminLinkedVacancyList));
+    for (var i = 0; i < all.length; i++) {
+      if (((all[i].id || all[i].vacancy_id) | 0) === id) return all[i];
+    }
+    return null;
+  }
+
+  function findAdminCandidate(id) {
+    id = parseInt(id, 10) || 0;
+    var list = ensureArray(lastAdminCandidateSearchList);
+    for (var i = 0; i < list.length; i++) {
+      if ((list[i].id | 0) === id) return list[i];
+    }
+    return null;
+  }
+
+  function renderAdminVacanciesList(list) {
+    list = ensureArray(list);
+    var statusOptions = getVacancyStatusOptions();
+    var html = '<div class="screen" id="admin-vacancies-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Admin vacancies</h1></div>';
+    html += '<div class="form-card filter-card"><label class="field-label" for="admin-vacancies-status-filter">Workflow status</label><div class="filter-group"><select id="admin-vacancies-status-filter"><option value=""' + (adminVacanciesStatusFilter === '' ? ' selected' : '') + '>All</option><option value="open"' + (adminVacanciesStatusFilter === 'open' ? ' selected' : '') + '>Open</option><option value="closed"' + (adminVacanciesStatusFilter === 'closed' ? ' selected' : '') + '>Closed</option>';
+    statusOptions.forEach(function (opt) {
+      html += '<option value="' + escapeHtml(opt[0]) + '"' + (adminVacanciesStatusFilter === opt[0] ? ' selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+    });
+    html += '</select></div></div>';
+    if (!list.length) {
+      html += '<div class="empty-state">No vacancies found.</div>';
+    } else {
+      html += '<div class="list-card"><ul class="list-items">';
+      list.forEach(function (v) {
+        var current = v.status || v.workflow_status || '';
+        var categoryLabel = getCategoryLabel(v);
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>';
+        if (v.company_name) html += '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>';
+        html += '<span class="vacancy-status ' + (isVacancyClosed(current) ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(v.status_label || getVacancyStatusLabel(current)) + '</span>';
+        if (categoryLabel) html += '<span class="item-meta">' + escapeHtml(categoryLabel) + '</span>';
+        html += '<span class="item-meta">Matches: ' + ((v.matches_count || 0) | 0) + ' · Responses: ' + ((v.applications_count || 0) | 0) + '</span></div>';
+        html += '<div class="admin-inline-actions"><select class="admin-vacancy-status-select" data-admin-vacancy-status-id="' + (v.id || '') + '">';
+        statusOptions.forEach(function (opt) {
+          html += '<option value="' + escapeHtml(opt[0]) + '"' + (current === opt[0] ? ' selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+        });
+        html += '</select><button type="button" class="btn-sm btn-outline" data-admin-save-vacancy-status="' + (v.id || '') + '">Save</button></div>';
+        html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-admin-view-vacancy="' + (v.id || '') + '">View</button><button type="button" class="btn-sm btn-primary" data-admin-match-vacancy="' + (v.id || '') + '">Match</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminVacancyDetail(v) {
+    if (!v) return '<div class="screen"><div class="empty-state">Vacancy not found.</div><button type="button" class="btn-back" data-screen="admin-vacancies">Back</button></div>';
+    var vacancyId = v.id || v.vacancy_id || 0;
+    var statusOptions = getVacancyStatusOptions();
+    var current = v.status || v.workflow_status || '';
+    var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="admin-vacancies">‹</button><h1 class="screen-title">Vacancy</h1></div><div class="content-card vacancy-detail">';
+    if (v.company_name) html += '<p class="vacancy-company">' + escapeHtml(v.company_name) + '</p>';
+    html += '<h2 class="vacancy-detail-title">' + escapeHtml(v.title || '') + '</h2>';
+    html += '<p class="vacancy-meta"><strong>Status:</strong> ' + escapeHtml(v.status_label || getVacancyStatusLabel(current)) + '</p>';
+    if (v.terms) html += '<p class="vacancy-meta"><strong>Terms:</strong> ' + escapeHtml(v.terms) + '</p>';
+    if (v.skills_required) html += '<p class="vacancy-meta"><strong>Skills:</strong> ' + escapeHtml(v.skills_required) + '</p>';
+    if (v.tags) html += '<p class="vacancy-meta"><strong>Tags:</strong> ' + escapeHtml(v.tags) + '</p>';
+    var content = (v.content || v.excerpt || '').trim();
+    if (content) html += '<div class="vacancy-content content-body">' + content + '</div>';
+    html += '</div><div class="form-card"><label class="field-label" for="admin-vacancy-detail-status">Workflow status</label><select id="admin-vacancy-detail-status" data-admin-vacancy-status-id="' + vacancyId + '">';
+    statusOptions.forEach(function (opt) {
+      html += '<option value="' + escapeHtml(opt[0]) + '"' + (current === opt[0] ? ' selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+    });
+    html += '</select><button type="button" class="btn-primary btn-full" data-admin-save-vacancy-status="' + vacancyId + '">Save status</button></div>';
+    html += '<button type="button" class="btn-primary btn-full" data-admin-match-vacancy="' + vacancyId + '">Find candidate</button><button type="button" class="btn-back" data-screen="admin-vacancies">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminCandidateSearch(list, query) {
+    list = ensureArray(list);
+    var html = '<div class="screen" id="admin-candidates-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Admin candidates</h1></div>';
+    html += '<form class="form-card" id="admin-candidate-search-form"><label class="field-label" for="admin-candidate-query">Search</label><input type="text" id="admin-candidate-query" value="' + escapeHtml(query || '') + '" placeholder="Name, Telegram, email, skill"><button type="submit" class="btn-primary btn-full">Search</button></form>';
+    if (!(query || '').trim()) {
+      html += '<div class="empty-state">Search candidates by name, Telegram, email or skill.</div>';
+    } else if (!list.length) {
+      html += '<div class="empty-state">No candidates found.</div>';
+    } else {
+      html += '<div class="list-card"><ul class="list-items">';
+      list.forEach(function (c) {
+        var location = [c.location_city || '', c.location_country || ''].filter(Boolean).join(', ');
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(c.display_name || ('ID ' + c.id)) + '</span>';
+        if (c.hr_title) html += '<span class="item-meta">' + escapeHtml(c.hr_title) + '</span>';
+        if (c.telegram_username) html += '<span class="item-meta"><a href="https://t.me/' + escapeHtml(c.telegram_username.replace(/^@+/, '')) + '" target="_blank" rel="noopener">@' + escapeHtml(c.telegram_username.replace(/^@+/, '')) + '</a></span>';
+        if (location) html += '<span class="item-meta">' + escapeHtml(location) + '</span>';
+        html += '<span class="match-status">' + escapeHtml(c.open_to_work_label || getOpenToWorkLabel(c.open_to_work || c.hr_status)) + '</span></div>';
+        html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-admin-view-candidate="' + (c.id || '') + '">View</button><button type="button" class="btn-sm btn-primary" data-admin-match-candidate="' + (c.id || '') + '">Match</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminCandidateDetail(c) {
+    if (!c) return '<div class="screen"><div class="empty-state">Candidate not found.</div><button type="button" class="btn-back" data-screen="admin-candidates">Back</button></div>';
+    var location = [c.location_city || '', c.location_country || ''].filter(Boolean).join(', ') || '—';
+    var resume = c.resume || null;
+    var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="admin-candidates">‹</button><h1 class="screen-title">Candidate</h1></div><div class="content-card candidate-profile">';
+    html += '<p class="content-title">' + escapeHtml(c.display_name || ('ID ' + c.id)) + '</p>';
+    if (c.telegram_username) html += '<p class="profile-line"><strong>Telegram:</strong> @' + escapeHtml(c.telegram_username) + '</p>';
+    if (c.linkedin_url) html += '<p class="profile-line"><strong>LinkedIn:</strong> <a href="' + escapeHtml(c.linkedin_url) + '" target="_blank" rel="noopener">' + escapeHtml(c.linkedin_url) + '</a></p>';
+    html += '<p class="profile-line"><strong>Title:</strong> ' + escapeHtml(c.hr_title || '—') + '</p>';
+    html += '<p class="profile-line"><strong>Location:</strong> ' + escapeHtml(location) + '</p>';
+    html += '<p class="profile-line"><strong>Open to work:</strong> ' + escapeHtml(c.open_to_work_label || getOpenToWorkLabel(c.open_to_work || c.hr_status)) + '</p>';
+    html += '<p class="profile-line"><strong>Club:</strong> ' + escapeHtml(c.club_label || '—') + '</p>';
+    if (c.hr_skills) html += '<p class="profile-line"><strong>Skills:</strong> ' + escapeHtml(c.hr_skills) + '</p>';
+    if (c.hr_tags) html += '<p class="profile-line"><strong>Tags:</strong> ' + escapeHtml(c.hr_tags) + '</p>';
+    if (c.hr_about) html += '<div class="content-body">' + escapeHtml(c.hr_about).replace(/\n/g, '<br>') + '</div>';
+    if (resume && resume.cv_url) html += '<a href="' + escapeHtml(resume.cv_url) + '" target="_blank" class="link-cv">Download CV</a>';
+    html += '</div><button type="button" class="btn-primary btn-full" data-admin-match-candidate="' + (c.id || '') + '">Find vacancy</button><button type="button" class="btn-back" data-screen="admin-candidates">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminCandidatePicker(vacancy, list, query) {
+    list = ensureArray(list);
+    var title = vacancy ? vacancy.title : 'vacancy';
+    var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="admin-vacancies">‹</button><h1 class="screen-title">Match candidate</h1></div>';
+    html += '<div class="content-card"><p class="content-meta">Vacancy</p><p class="content-title">' + escapeHtml(title || '') + '</p></div>';
+    html += '<form class="form-card" id="admin-match-candidate-search-form"><label class="field-label" for="admin-match-candidate-query">Candidate search</label><input type="text" id="admin-match-candidate-query" value="' + escapeHtml(query || '') + '" placeholder="Name, Telegram, email, skill"><button type="submit" class="btn-primary btn-full">Search</button></form>';
+    if ((query || '').trim() && !list.length) html += '<div class="empty-state">No candidates found.</div>';
+    if (list.length) {
+      html += '<div class="list-card"><ul class="list-items">';
+      list.forEach(function (c) {
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(c.display_name || ('ID ' + c.id)) + '</span>';
+        if (c.hr_title) html += '<span class="item-meta">' + escapeHtml(c.hr_title) + '</span>';
+        if (c.hr_skills) html += '<span class="item-meta">' + escapeHtml(c.hr_skills) + '</span>';
+        html += '</div><div class="item-actions"><button type="button" class="btn-sm btn-primary" data-admin-create-match-vacancy="' + (vacancy ? vacancy.id : adminSelectedVacancyId) + '" data-admin-create-match-candidate="' + (c.id || '') + '">Create match</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<button type="button" class="btn-back" data-screen="admin-vacancies">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminVacancyPicker(candidate, list, query) {
+    list = ensureArray(list);
+    var linkedVacancies = ensureArray(candidate && candidate.application_vacancies);
+    lastAdminLinkedVacancyList = linkedVacancies;
+    var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="admin-candidates">‹</button><h1 class="screen-title">Match vacancy</h1></div>';
+    html += '<div class="content-card"><p class="content-meta">Candidate</p><p class="content-title">' + escapeHtml(candidate ? candidate.display_name : '') + '</p></div>';
+    if (linkedVacancies.length) {
+      html += '<div class="list-card"><ul class="list-items">';
+      linkedVacancies.forEach(function (v) {
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>';
+        if (v.company_name) html += '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>';
+        if (v.match_status_label) html += '<span class="match-status">' + escapeHtml(v.match_status_label) + '</span>';
+        else if (v.application_status) html += '<span class="item-meta">Application: ' + escapeHtml(v.application_status) + '</span>';
+        html += '</div><div class="item-actions"><button type="button" class="btn-sm btn-outline" data-admin-picker-view-vacancy="' + (v.vacancy_id || '') + '">View</button><button type="button" class="btn-sm btn-primary" data-admin-create-match-vacancy="' + (v.vacancy_id || '') + '" data-admin-create-match-candidate="' + (candidate ? candidate.id : adminSelectedCandidateId) + '">Match</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<form class="form-card" id="admin-match-vacancy-search-form"><label class="field-label" for="admin-match-vacancy-query">Vacancy search</label><input type="text" id="admin-match-vacancy-query" value="' + escapeHtml(query || '') + '" placeholder="Title, company, skill"><button type="submit" class="btn-primary btn-full">Search</button></form>';
+    if ((query || '').trim() && !list.length) html += '<div class="empty-state">No vacancies found.</div>';
+    if (list.length) {
+      html += '<div class="list-card"><ul class="list-items">';
+      list.forEach(function (v) {
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(v.title || '') + '</span>';
+        if (v.company_name) html += '<span class="item-meta">' + escapeHtml(v.company_name) + '</span>';
+        if (v.skills_required) html += '<span class="item-meta">' + escapeHtml(v.skills_required) + '</span>';
+        html += '</div><div class="item-actions"><button type="button" class="btn-sm btn-outline" data-admin-picker-view-vacancy="' + (v.id || '') + '">View</button><button type="button" class="btn-sm btn-primary" data-admin-create-match-vacancy="' + (v.id || '') + '" data-admin-create-match-candidate="' + (candidate ? candidate.id : adminSelectedCandidateId) + '">Match</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<button type="button" class="btn-back" data-screen="admin-candidates">Back</button></div>';
+    return html;
+  }
+
+  function renderAdminMatchesList(matches) {
+    matches = ensureArray(matches);
+    var statusOptions = getMatchStatusOptions();
+    var html = '<div class="screen" id="admin-matches-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Admin matches</h1></div>';
+    if (!matches.length) {
+      html += '<div class="empty-state">No matches yet.</div>';
+    } else {
+      html += '<div class="list-card"><ul class="list-items">';
+      matches.forEach(function (m) {
+        var chatTitle = (m.vacancy_title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
+        html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(m.vacancy_title || '') + '</span><span class="item-meta">' + escapeHtml(m.candidate_name || '') + '</span><span class="match-status">' + escapeHtml(m.status_label || getMatchStatusLabel(m.status)) + '</span></div>';
+        html += '<div class="admin-inline-actions"><select class="admin-match-status-select" data-admin-match-status-id="' + (m.id || '') + '">';
+        statusOptions.forEach(function (opt) {
+          html += '<option value="' + escapeHtml(opt[0]) + '"' + (m.status === opt[0] ? ' selected' : '') + '>' + escapeHtml(opt[1]) + '</option>';
+        });
+        html += '</select><button type="button" class="btn-sm btn-outline" data-admin-save-match-status="' + (m.id || '') + '">Save</button></div>';
+        html += '<div class="item-actions"><button type="button" class="btn-sm btn-primary" data-open-chat="' + (m.id || '') + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="admin-matches" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.status || '') + '">Chat</button></div></li>';
+      });
+      html += '</ul></div>';
+    }
+    html += '<button type="button" class="btn-back" data-screen="club-services">Back</button></div>';
+    return html;
+  }
+
   function renderVacancyDetail(v, applied, isMine, backScreen) {
     backScreen = backScreen || 'vacancies';
-    var isClosed = isMine && ((v.status || '').toLowerCase() === 'closed');
+    lastVacancyDetailMatches = ensureArray(v && v.matches);
+    lastVacancyDetailBackScreen = backScreen;
+    var isClosed = isMine && isVacancyClosed(v.status);
     var modStatus = isMine ? (v.moderation_status || '').toLowerCase() : '';
     var canClose = isMine && !isClosed && modStatus === 'published';
     var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + escapeHtml(backScreen) + '">‹</button><h1 class="screen-title">Vacancy</h1></div>';
     html += '<div class="content-card vacancy-detail">';
     if (isMine && (v.status || v.moderation_status)) {
       html += '<p class="vacancy-status-line">';
-      if (v.status) html += '<span class="vacancy-status ' + (isClosed ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(isClosed ? 'Closed' : 'Open') + '</span> ';
+      if (v.status) html += '<span class="vacancy-status ' + (isClosed ? 'vacancy-status-closed' : 'vacancy-status-open') + '">' + escapeHtml(v.status_label || getVacancyStatusLabel(v.status)) + '</span> ';
       if (modStatus === 'pending_review') html += '<span class="moderation-status moderation-pending">Pending review</span>';
       else if (modStatus === 'rejected') html += '<span class="moderation-status moderation-rejected">Rejected</span>';
       else if (modStatus === 'published') html += '<span class="moderation-status moderation-published">Published</span>';
@@ -508,6 +878,17 @@
     html += '<div class="vacancy-content content-body">' + (content ? content : escapeHtml('')) + '</div>';
     html += '</div>';
     if (isMine) {
+      if (lastVacancyDetailMatches.length) {
+        html += '<div class="list-card vacancy-candidates"><ul class="list-items">';
+        lastVacancyDetailMatches.forEach(function (m, i) {
+          var chatTitle = (v.title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
+          html += '<li class="list-item-with-action"><div class="item-main"><span class="item-title">' + escapeHtml(m.candidate_name || ('Candidate #' + (m.candidate_id || ''))) + '</span>';
+          if (m.candidate_title) html += '<span class="item-meta">' + escapeHtml(m.candidate_title) + '</span>';
+          html += '<span class="match-status">' + escapeHtml(m.match_status_label || getMatchStatusLabel(m.match_status)) + '</span></div>';
+          html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-vacancy-match-view="' + i + '">View</button><button type="button" class="btn-sm btn-primary" data-open-chat="' + (m.match_id || '') + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="' + escapeHtml(backScreen) + '" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.match_status || '') + '">Chat</button></div></li>';
+        });
+        html += '</ul></div>';
+      }
       if (canClose) html += '<button type="button" class="btn-close-vacancy btn-full" id="vacancy-detail-close-btn" data-vacancy-id="' + (v.id || '') + '">Close vacancy</button>';
       html += '<button type="button" class="btn-danger btn-full" id="vacancy-detail-delete-btn" data-vacancy-id="' + (v.id || '') + '">Delete vacancy</button>';
     } else if (applied) {
@@ -530,7 +911,7 @@
       matches.forEach(function (m, i) {
         var chatTitle = (m.vacancy_title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
         var unreadBadge = (m.unread_count | 0) > 0 ? ' <span class="nav-badge">' + (m.unread_count > 99 ? '99+' : m.unread_count) + '</span>' : '';
-        html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' — ' + escapeHtml(m.candidate_name || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span>' + unreadBadge + '</div>';
+        html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' — ' + escapeHtml(m.candidate_name || '') + ' <span class="match-status">' + escapeHtml(m.status_label || getMatchStatusLabel(m.status)) + '</span>' + unreadBadge + '</div>';
         html += '<div class="item-actions"><button type="button" class="btn-sm btn-outline" data-match-employer-view="' + i + '">View</button>';
         html += '<button type="button" class="btn-sm btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.status || '') + '">Chat</button></div></li>';
       });
@@ -541,7 +922,7 @@
         var comment = (m.feedback_comment || '').trim();
         var chatTitle = (m.vacancy_title || '') + (m.employer_name ? ' · ' + m.employer_name : '');
         var unreadBadge = (m.unread_count | 0) > 0 ? ' <span class="nav-badge">' + (m.unread_count > 99 ? '99+' : m.unread_count) + '</span>' : '';
-        html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status || '') + '</span>' + unreadBadge + '</div>';
+        html += '<li class="list-item-match" data-match-id="' + m.id + '"><div class="item-main">' + escapeHtml(m.vacancy_title || '') + ' <span class="match-status">' + escapeHtml(m.status_label || getMatchStatusLabel(m.status)) + '</span>' + unreadBadge + '</div>';
         html += '<textarea class="match-feedback-input" placeholder="Comment (optional)" data-match-id="' + m.id + '" rows="2">' + escapeHtml(comment) + '</textarea>';
         html += '<div class="match-actions"><button type="button" class="btn-sm btn-reaction' + (m.reaction === 'interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="interested">Interested</button>';
         html += '<button type="button" class="btn-sm btn-reaction' + (m.reaction === 'not_interested' ? ' active' : '') + '" data-match-id="' + m.id + '" data-reaction="not_interested">Not interested</button>';
@@ -561,7 +942,7 @@
     } else {
       html += '<div class="list-card"><ul class="list-items">';
       list.forEach(function (x, i) {
-        var statusBadge = (x.match_status === 'offer_made' ? ' · Offer made' : '') + (x.match_status === 'dialog_closed' ? ' · Closed' : '');
+        var statusBadge = x.match_status ? ' · ' + getMatchStatusLabel(x.match_status) : '';
         var label = (x.vacancy_company_name ? x.vacancy_company_name + ' · ' : '') + (x.vacancy_title || '') + ' — ' + (x.candidate_name || '') + statusBadge;
         var chatTitle = (x.vacancy_title || '') + (x.candidate_name ? ' · ' + x.candidate_name : '');
         html += '<li class="list-item-with-action"><div class="item-main">' + escapeHtml(label) + '</div>';
@@ -615,6 +996,32 @@
     return html;
   }
 
+  function renderVacancyMatchCandidateDetail(item, backScreen) {
+    backScreen = backScreen || lastVacancyDetailBackScreen || 'my-vacancies';
+    item = item || {};
+    var resume = item.resume || null;
+    var telegramUsername = item.telegram_username || item.candidate_telegram_username || '';
+    var telegramId = item.telegram_id || item.candidate_telegram_id || 0;
+    var linkedinUrl = item.linkedin_url || item.candidate_linkedin_url || '';
+    var chatTitle = item.candidate_name || 'Candidate';
+    var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="' + escapeHtml(backScreen) + '">‹</button><h1 class="screen-title">Candidate</h1></div>';
+    html += '<div class="content-card"><p class="content-title">' + escapeHtml(item.candidate_name || ('Candidate #' + (item.candidate_id || ''))) + '</p>';
+    if (item.match_status || item.match_status_label) html += '<p><span class="match-status">' + escapeHtml(item.match_status_label || getMatchStatusLabel(item.match_status)) + '</span></p>';
+    if (telegramUsername) html += '<p class="profile-line"><strong>Telegram:</strong> <a href="https://t.me/' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '" target="_blank" rel="noopener">@' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '</a></p>';
+    else if (telegramId) html += '<p class="profile-line"><strong>Telegram ID:</strong> ' + escapeHtml(String(telegramId)) + '</p>';
+    if (linkedinUrl) html += '<p class="profile-line"><strong>LinkedIn:</strong> <a href="' + escapeHtml(linkedinUrl) + '" target="_blank" rel="noopener">' + escapeHtml(linkedinUrl) + '</a></p>';
+    if (item.candidate_title) html += '<p class="profile-line"><strong>Title:</strong> ' + escapeHtml(item.candidate_title) + '</p>';
+    if (item.candidate_status) html += '<p class="profile-line"><strong>Status:</strong> ' + escapeHtml(getOpenToWorkLabel(item.candidate_status)) + '</p>';
+    if (item.candidate_skills) html += '<p class="profile-line"><strong>Skills:</strong> ' + escapeHtml(item.candidate_skills) + '</p>';
+    if (item.candidate_tags) html += '<p class="profile-line"><strong>Tags:</strong> ' + escapeHtml(item.candidate_tags) + '</p>';
+    if (resume && resume.content) html += '<div class="content-body">' + escapeHtml(resume.content) + '</div>';
+    if (resume && resume.cv_url) html += '<a href="' + escapeHtml(resume.cv_url) + '" target="_blank" class="link-cv">Download CV</a>';
+    html += '</div>';
+    if (item.match_id) html += '<button type="button" class="btn-primary" data-open-chat="' + item.match_id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="' + escapeHtml(backScreen) + '" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(item.match_status || '') + '">Open chat</button>';
+    html += '<button type="button" class="btn-back" data-screen="' + escapeHtml(backScreen) + '">Back</button></div>';
+    return html;
+  }
+
   function renderOpenedResumeDetail(item) {
     var vacancyTitle = item.vacancy_title || '';
     var candidateName = item.candidate_name || '';
@@ -622,6 +1029,10 @@
     var skills = item.candidate_skills || '';
     var tags = item.candidate_tags || '';
     var status = item.candidate_status || '';
+    var title = item.candidate_title || '';
+    var telegramUsername = item.candidate_telegram_username || '';
+    var telegramId = item.candidate_telegram_id || 0;
+    var linkedinUrl = item.candidate_linkedin_url || '';
     var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="opened-resumes">‹</button><h1 class="screen-title">Candidate</h1></div>';
     html += '<div class="content-card"><p class="content-meta">' + escapeHtml(vacancyTitle) + ' · ' + escapeHtml(candidateName) + '</p>';
     if (resume && (resume.title || resume.content || resume.cv_url)) {
@@ -629,9 +1040,13 @@
       if (resume.content) html += '<div class="content-body">' + escapeHtml(resume.content) + '</div>';
       if (resume.cv_url) html += '<a href="' + escapeHtml(resume.cv_url) + '" target="_blank" class="link-cv">Download CV</a>';
     }
-    if (skills || tags || status) {
+    if (skills || tags || status || title || telegramUsername || telegramId || linkedinUrl) {
       html += '<div class="candidate-profile">';
+      if (title) html += '<p class="profile-line"><strong>Title:</strong> ' + escapeHtml(title) + '</p>';
       if (status) html += '<p class="profile-line"><strong>Status:</strong> ' + escapeHtml(status) + '</p>';
+      if (telegramUsername) html += '<p class="profile-line"><strong>Telegram:</strong> <a href="https://t.me/' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '" target="_blank" rel="noopener">@' + escapeHtml(telegramUsername.replace(/^@+/, '')) + '</a></p>';
+      else if (telegramId) html += '<p class="profile-line"><strong>Telegram ID:</strong> ' + escapeHtml(String(telegramId)) + '</p>';
+      if (linkedinUrl) html += '<p class="profile-line"><strong>LinkedIn:</strong> <a href="' + escapeHtml(linkedinUrl) + '" target="_blank" rel="noopener">' + escapeHtml(linkedinUrl) + '</a></p>';
       if (skills) html += '<p class="profile-line"><strong>Skills:</strong> ' + escapeHtml(skills) + '</p>';
       if (tags) html += '<p class="profile-line"><strong>Tags:</strong> ' + escapeHtml(tags) + '</p>';
       html += '</div>';
@@ -722,14 +1137,14 @@
   }
 
   function renderCreateVacancyForm() {
-    var html = '<div class="screen" id="create-vacancy-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Create vacancy</h1></div>';
+    var html = '<div class="screen" id="create-vacancy-screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="club-services">‹</button><h1 class="screen-title">Place vacancy</h1></div>';
     html += '<div class="form-card"><label class="field-label">Company name</label><input type="text" id="vacancy-company" placeholder="Your company or brand" />';
     html += '<label class="field-label">Job title (who you are looking for) *</label><input type="text" id="vacancy-title" placeholder="e.g. Frontend Developer" />';
     html += '<label class="field-label">Description</label><textarea id="vacancy-content" rows="5" placeholder="Requirements, responsibilities..."></textarea>';
     html += '<label class="field-label">Required skills</label><input type="text" id="vacancy-skills" placeholder="e.g. PHP, React" />';
     html += '<label class="field-label">Tags</label><input type="text" id="vacancy-tags" placeholder="e.g. remote, full-time" />';
     html += '<button type="button" class="btn-secondary" id="vacancy-ai-btn">Generate description with AI</button>';
-    html += '<button type="button" class="btn-primary" id="vacancy-submit-btn">Publish</button></div></div>';
+    html += '<button type="button" class="btn-primary" id="vacancy-submit-btn">Submit for approval</button></div></div>';
     return html;
   }
 
@@ -768,6 +1183,13 @@
         goTo('vacancies');
       });
     }
+    var vacanciesCategoryEl = document.getElementById('vacancies-category-filter');
+    if (vacanciesCategoryEl) {
+      vacanciesCategoryEl.addEventListener('change', function () {
+        vacanciesCategoryFilter = this.value || '';
+        goTo('vacancies');
+      });
+    }
     var myVacanciesStatusEl = document.getElementById('my-vacancies-status-filter');
     if (myVacanciesStatusEl) {
       myVacanciesStatusEl.addEventListener('change', function () {
@@ -775,6 +1197,115 @@
         goTo('my-vacancies');
       });
     }
+    var adminVacanciesStatusEl = document.getElementById('admin-vacancies-status-filter');
+    if (adminVacanciesStatusEl) {
+      adminVacanciesStatusEl.addEventListener('change', function () {
+        adminVacanciesStatusFilter = this.value || '';
+        goTo('admin-vacancies');
+      });
+    }
+    var adminCandidateSearchForm = document.getElementById('admin-candidate-search-form');
+    if (adminCandidateSearchForm) {
+      adminCandidateSearchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var input = document.getElementById('admin-candidate-query');
+        adminCandidateSearchQuery = input ? (input.value || '').trim() : '';
+        goTo('admin-candidates');
+      });
+    }
+    var adminMatchCandidateSearchForm = document.getElementById('admin-match-candidate-search-form');
+    if (adminMatchCandidateSearchForm) {
+      adminMatchCandidateSearchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var input = document.getElementById('admin-match-candidate-query');
+        adminCandidateSearchQuery = input ? (input.value || '').trim() : '';
+        goTo('admin-match-candidates');
+      });
+    }
+    var adminMatchVacancySearchForm = document.getElementById('admin-match-vacancy-search-form');
+    if (adminMatchVacancySearchForm) {
+      adminMatchVacancySearchForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var input = document.getElementById('admin-match-vacancy-query');
+        adminVacancySearchQuery = input ? (input.value || '').trim() : '';
+        goTo('admin-match-vacancies');
+      });
+    }
+    document.querySelectorAll('[data-admin-view-vacancy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        adminSelectedVacancyId = parseInt(this.getAttribute('data-admin-view-vacancy'), 10) || 0;
+        setContent(renderAdminVacancyDetail(findAdminVacancy(adminSelectedVacancyId)));
+      });
+    });
+    document.querySelectorAll('[data-admin-picker-view-vacancy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        adminSelectedVacancyId = parseInt(this.getAttribute('data-admin-picker-view-vacancy'), 10) || 0;
+        setContent(renderAdminVacancyDetail(findAdminVacancy(adminSelectedVacancyId)));
+      });
+    });
+    document.querySelectorAll('[data-admin-match-vacancy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        adminSelectedVacancyId = parseInt(this.getAttribute('data-admin-match-vacancy'), 10) || 0;
+        adminCandidateSearchQuery = '';
+        lastAdminCandidateSearchList = [];
+        goTo('admin-match-candidates');
+      });
+    });
+    document.querySelectorAll('[data-admin-view-candidate]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        adminSelectedCandidateId = parseInt(this.getAttribute('data-admin-view-candidate'), 10) || 0;
+        setContent(renderAdminCandidateDetail(findAdminCandidate(adminSelectedCandidateId)));
+      });
+    });
+    document.querySelectorAll('[data-admin-match-candidate]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        adminSelectedCandidateId = parseInt(this.getAttribute('data-admin-match-candidate'), 10) || 0;
+        adminVacancySearchQuery = '';
+        lastAdminVacancySearchList = [];
+        goTo('admin-match-vacancies');
+      });
+    });
+    document.querySelectorAll('[data-admin-save-vacancy-status]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(this.getAttribute('data-admin-save-vacancy-status'), 10) || 0;
+        var select = document.querySelector('[data-admin-vacancy-status-id="' + id + '"]');
+        var status = select ? select.value : '';
+        if (!id || !status) return;
+        showLoading('Saving status...');
+        window.HR_API.post('/vacancies/' + id, { status: status }).then(function () {
+          goTo('admin-vacancies');
+        }).catch(function (e) {
+          showError(e.message || 'Failed to save vacancy status', e);
+        });
+      });
+    });
+    document.querySelectorAll('[data-admin-save-match-status]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = parseInt(this.getAttribute('data-admin-save-match-status'), 10) || 0;
+        var select = document.querySelector('[data-admin-match-status-id="' + id + '"]');
+        var status = select ? select.value : '';
+        if (!id || !status) return;
+        showLoading('Saving match...');
+        window.HR_API.post('/matches/' + id, { status: status }).then(function () {
+          goTo('admin-matches');
+        }).catch(function (e) {
+          showError(e.message || 'Failed to save match status', e);
+        });
+      });
+    });
+    document.querySelectorAll('[data-admin-create-match-vacancy][data-admin-create-match-candidate]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var vacancyId = parseInt(this.getAttribute('data-admin-create-match-vacancy'), 10) || 0;
+        var candidateId = parseInt(this.getAttribute('data-admin-create-match-candidate'), 10) || 0;
+        if (!vacancyId || !candidateId) return;
+        showLoading('Creating match...');
+        window.HR_API.post('/matches', { vacancy_id: vacancyId, candidate_id: candidateId }).then(function () {
+          goTo('admin-matches');
+        }).catch(function (e) {
+          showError(e.message || 'Failed to create match', e);
+        });
+      });
+    });
     var telegramLoginBtn = document.getElementById('telegram-login-btn');
     if (telegramLoginBtn) {
       telegramLoginBtn.addEventListener('click', function () {
@@ -935,13 +1466,23 @@
         var skipped = !!(skipEl && skipEl.checked);
         var firstNameEl = document.getElementById('profile-first-name');
         var lastNameEl = document.getElementById('profile-last-name');
+        var openToWorkEl = document.getElementById('profile-open-to-work');
+        var titleEl = document.getElementById('profile-hr-title');
         var skillsEl = document.getElementById('profile-skills');
         var tagsEl = document.getElementById('profile-tags');
+        var countryEl = document.getElementById('profile-location-country');
+        var cityEl = document.getElementById('profile-location-city');
+        var aboutEl = document.getElementById('profile-about');
         var payload = { linkedin_url: skipped ? '' : url, linkedin_skipped: skipped };
         if (firstNameEl) payload.first_name = (firstNameEl.value || '').trim();
         if (lastNameEl) payload.last_name = (lastNameEl.value || '').trim();
+        if (openToWorkEl) payload.open_to_work = (openToWorkEl.value || '').trim();
+        if (titleEl) payload.hr_title = (titleEl.value || '').trim();
         if (skillsEl) payload.hr_skills = (skillsEl.value || '').trim();
         if (tagsEl) payload.hr_tags = (tagsEl.value || '').trim();
+        if (countryEl) payload.location_country = (countryEl.value || '').trim();
+        if (cityEl) payload.location_city = (cityEl.value || '').trim();
+        if (aboutEl) payload.hr_about = (aboutEl.value || '').trim();
         profileSaveBtn.disabled = true;
         window.HR_API.post('/me', payload).then(function () {
           return window.HR_API.get('/me');
@@ -1072,24 +1613,12 @@
     });
 
     function checkResumeAndRespond(vacancyId, btn, onSuccess) {
-      window.HR_API.get('/resumes/me').then(function (r) {
-        var resume = (r && r.resume !== undefined) ? r.resume : r;
-        var hasResume = resume && (resume.title || resume.content || resume.cv_url || (resume.cv_attachment_id && resume.cv_attachment_id > 0));
-        if (!hasResume) {
-          btn.disabled = false;
-          alert('Fill in your resume first. Go to Club services → Place candidacy.');
-          return;
-        }
-        window.HR_API.post('/vacancies/' + vacancyId + '/respond', {}).then(function () {
-          if (onSuccess) onSuccess();
-          else goTo('vacancies');
-        }).catch(function (e) {
-          btn.disabled = false;
-          alert(e.message || 'Failed');
-        });
-      }).catch(function () {
+      window.HR_API.post('/vacancies/' + vacancyId + '/respond', {}).then(function () {
+        if (onSuccess) onSuccess();
+        else goTo('vacancies');
+      }).catch(function (e) {
         btn.disabled = false;
-        alert('Fill in your resume first. Go to Club services → Place candidacy.');
+        alert(e.message || 'Failed');
       });
     }
 
@@ -1192,10 +1721,17 @@
         var chatTitle = (m.vacancy_title || '') + (m.candidate_name ? ' · ' + m.candidate_name : '');
         var html = '<div class="screen"><div class="screen-header"><button type="button" class="back-btn" data-screen="matches">‹</button><h1 class="screen-title">Match</h1></div>';
         html += '<div class="content-card"><p class="content-meta">' + escapeHtml(m.vacancy_title || '') + ' · ' + escapeHtml(m.candidate_name || '') + '</p>';
-        html += '<p><span class="match-status">' + escapeHtml(m.status || '') + '</span></p></div>';
+        html += '<p><span class="match-status">' + escapeHtml(m.status_label || getMatchStatusLabel(m.status)) + '</span></p></div>';
         html += '<button type="button" class="btn-primary" data-open-chat="' + m.id + '" data-chat-title="' + escapeHtml(chatTitle) + '" data-chat-back="matches" data-chat-is-employer="1" data-chat-match-status="' + escapeHtml(m.status || '') + '">Open chat</button>';
         html += '<button type="button" class="btn-back" data-screen="matches">Back to list</button></div>';
         setContent(html);
+      };
+    });
+    el.querySelectorAll('[data-vacancy-match-view]').forEach(function (btn) {
+      btn.onclick = function () {
+        var i = parseInt(this.getAttribute('data-vacancy-match-view'), 10);
+        var item = lastVacancyDetailMatches[i];
+        if (item) setContent(renderVacancyMatchCandidateDetail(item, lastVacancyDetailBackScreen));
       };
     });
     el.querySelectorAll('[data-pending-approve]').forEach(function (btn) {
@@ -1390,7 +1926,9 @@
       return;
     }
     if (screen === 'vacancies') {
-      Promise.all([ window.HR_API.get('/vacancies?status=' + encodeURIComponent(vacanciesStatusFilter || 'open')), window.HR_API.get('/applications/me') ]).then(function (arr) {
+      var vacancyPath = '/vacancies?status=' + encodeURIComponent(vacanciesStatusFilter || 'open');
+      if (vacanciesCategoryFilter) vacancyPath += '&category=' + encodeURIComponent(vacanciesCategoryFilter);
+      Promise.all([ window.HR_API.get(vacancyPath), window.HR_API.get('/applications/me') ]).then(function (arr) {
         var list = ensureArray(arr && arr[0] !== undefined ? arr[0] : []);
         var applications = ensureArray(arr && arr[1] !== undefined ? arr[1] : []);
         var appliedIds = {};
@@ -1411,6 +1949,69 @@
         setContent(renderMyVacanciesList(lastMyVacanciesList));
       }).catch(function (e) {
         showError(e.message || 'Failed to load', e);
+      });
+      return;
+    }
+    if (screen === 'admin-vacancies') {
+      var adminPath = '/vacancies/me';
+      if (adminVacanciesStatusFilter) adminPath += '?status=' + encodeURIComponent(adminVacanciesStatusFilter);
+      window.HR_API.get(adminPath).then(function (raw) {
+        lastAdminVacanciesList = ensureArray(raw);
+        setContent(renderAdminVacanciesList(lastAdminVacanciesList));
+      }).catch(function (e) {
+        showError(e.message || 'Failed to load admin vacancies', e);
+      });
+      return;
+    }
+    if (screen === 'admin-candidates') {
+      if (!(adminCandidateSearchQuery || '').trim()) {
+        lastAdminCandidateSearchList = [];
+        setContent(renderAdminCandidateSearch([], adminCandidateSearchQuery));
+        return;
+      }
+      window.HR_API.get('/admin/candidates-for-match?q=' + encodeURIComponent(adminCandidateSearchQuery)).then(function (raw) {
+        lastAdminCandidateSearchList = ensureArray(raw);
+        setContent(renderAdminCandidateSearch(lastAdminCandidateSearchList, adminCandidateSearchQuery));
+      }).catch(function (e) {
+        showError(e.message || 'Failed to search candidates', e);
+      });
+      return;
+    }
+    if (screen === 'admin-match-candidates') {
+      var vacancy = findAdminVacancy(adminSelectedVacancyId);
+      if (!adminSelectedVacancyId) {
+        goTo('admin-vacancies');
+        return;
+      }
+      if (!(adminCandidateSearchQuery || '').trim()) {
+        lastAdminCandidateSearchList = [];
+        setContent(renderAdminCandidatePicker(vacancy, [], adminCandidateSearchQuery));
+        return;
+      }
+      window.HR_API.get('/admin/candidates-for-match?q=' + encodeURIComponent(adminCandidateSearchQuery)).then(function (raw) {
+        lastAdminCandidateSearchList = ensureArray(raw);
+        setContent(renderAdminCandidatePicker(vacancy, lastAdminCandidateSearchList, adminCandidateSearchQuery));
+      }).catch(function (e) {
+        showError(e.message || 'Failed to search candidates', e);
+      });
+      return;
+    }
+    if (screen === 'admin-match-vacancies') {
+      var candidate = findAdminCandidate(adminSelectedCandidateId);
+      if (!adminSelectedCandidateId) {
+        goTo('admin-candidates');
+        return;
+      }
+      if (!(adminVacancySearchQuery || '').trim()) {
+        lastAdminVacancySearchList = [];
+        setContent(renderAdminVacancyPicker(candidate, [], adminVacancySearchQuery));
+        return;
+      }
+      window.HR_API.get('/admin/vacancies-for-match?q=' + encodeURIComponent(adminVacancySearchQuery)).then(function (raw) {
+        lastAdminVacancySearchList = ensureArray(raw);
+        setContent(renderAdminVacancyPicker(candidate, lastAdminVacancySearchList, adminVacancySearchQuery));
+      }).catch(function (e) {
+        showError(e.message || 'Failed to search vacancies', e);
       });
       return;
     }
@@ -1452,6 +2053,15 @@
         setContent(renderMatchesWithReaction(list));
       }).catch(function (e) {
         showError(e.message || 'Failed to load', e);
+      });
+      return;
+    }
+    if (screen === 'admin-matches') {
+      window.HR_API.get('/matches').then(function (raw) {
+        lastAdminMatchesList = ensureArray(raw);
+        setContent(renderAdminMatchesList(lastAdminMatchesList));
+      }).catch(function (e) {
+        showError(e.message || 'Failed to load matches', e);
       });
       return;
     }

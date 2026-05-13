@@ -491,6 +491,7 @@ body {
 .form-card input[type="url"],
 .form-card textarea,
 .form-card select,
+.admin-inline-actions select,
 .dev-login input[type="text"],
 .chat-input,
 .match-feedback-input {
@@ -513,6 +514,22 @@ body {
   min-height: 44px;
   padding-right: 36px;
   cursor: pointer;
+}
+
+.admin-inline-actions {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin-inline-actions select {
+  min-width: 180px;
+  flex: 1;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 13px;
 }
 
 .form-card textarea,
